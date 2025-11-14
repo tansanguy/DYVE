@@ -1,6 +1,6 @@
 import { Screen } from '../App';
-import dyveLogo from 'figma:asset/722889413d774d00135cb779a751029a918fd7c2.png';
-import kakaoLoginBtn from 'figma:asset/bf5265e12ba30b9cb07431cc30e30c3400dba2d2.png';
+import dyveLogo from '../../assets/images/dyve-logo.png';
+import kakaoLoginBtn from '../../assets/images/kakao_login_large_wide.png';
 
 interface LoginPageProps {
   navigate: (screen: Screen) => void;

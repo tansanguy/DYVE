@@ -8,7 +8,7 @@ interface BookingPageProps {
 }
 
 export default function BookingPage({ navigate, performance }: BookingPageProps) {
-  const [selectedSeat, setSelectedSeat] = useState<string | null>(null);
+  const [selectedSeats, setSelectedSeats] = useState<string[]>([]);
   const [bookedSeats] = useState<string[]>(['A3', 'B2', 'C4', 'D1']); // Mock booked seats
 
   if (!performance) {
@@ -26,12 +26,20 @@ export default function BookingPage({ navigate, performance }: BookingPageProps)
       venue: performance.venue,
       date: performance.date,
       time: performance.time,
-      price: performance.price,
+      price: performance.price * Math.max(selectedSeats.length, 1),
       entryType: performance.entryType,
-      selectedSeat,
+      selectedSeats: selectedSeats.length > 0 ? selectedSeats : [],
       bookingNumber: `DYVE${Date.now()}`,
     };
     navigate('confirm', { booking: bookingData });
+  };
+
+  const toggleSeatSelection = (seatId: string) => {
+    if (selectedSeats.includes(seatId)) {
+      setSelectedSeats(selectedSeats.filter(s => s !== seatId));
+    } else {
+      setSelectedSeats([...selectedSeats, seatId]);
+    }
   };
 
   // Render seat selection (좌석)
@@ -57,12 +65,12 @@ export default function BookingPage({ navigate, performance }: BookingPageProps)
                   {Array.from({ length: cols }, (_, i) => {
                     const seatId = `${rowLabel}${i + 1}`;
                     const isBooked = bookedSeats.includes(seatId);
-                    const isSelected = selectedSeat === seatId;
+                    const isSelected = selectedSeats.includes(seatId);
 
                     return (
                       <button
                         key={seatId}
-                        onClick={() => !isBooked && setSelectedSeat(seatId)}
+                        onClick={() => !isBooked && toggleSeatSelection(seatId)}
                         disabled={isBooked}
                         className={`w-10 h-10 rounded-lg font-semibold text-xs transition ${
                           isBooked
@@ -97,10 +105,10 @@ export default function BookingPage({ navigate, performance }: BookingPageProps)
             </div>
           </div>
 
-          {selectedSeat && (
+          {selectedSeats.length > 0 && (
             <div className="mt-6 pt-6 border-t border-white/5">
               <p className="text-white text-center">
-                선택한 좌석: <span className="text-[#FF3B5C] font-bold">{selectedSeat}</span>
+                선택한 좌석: <span className="text-[#FF3B5C] font-bold">{selectedSeats.join(', ')}</span>
               </p>
             </div>
           )}
@@ -115,6 +123,9 @@ export default function BookingPage({ navigate, performance }: BookingPageProps)
     const totalNumbers = rows * cols;
     const bookedNumbers = [3, 7, 12, 18, 25]; // Mock booked numbers
 
+    // 반응형 그리드 컬럼 계산 (최대 6개까지, 화면 크기에 맞게 조정)
+    const maxCols = Math.min(cols, 6);
+
     return (
       <div className="mb-8">
         <h3 className="text-white mb-4 font-bold">입장 번호 선택</h3>
@@ -124,18 +135,18 @@ export default function BookingPage({ navigate, performance }: BookingPageProps)
           </p>
 
           {/* Number Grid (포도알 형태) */}
-          <div className="grid gap-3" style={{ gridTemplateColumns: `repeat(${cols}, 1fr)` }}>
+          <div className="grid gap-2 sm:gap-3" style={{ gridTemplateColumns: `repeat(${maxCols}, minmax(0, 1fr))` }}>
             {Array.from({ length: totalNumbers }, (_, i) => {
               const number = i + 1;
               const isBooked = bookedNumbers.includes(number);
-              const isSelected = selectedSeat === `${number}`;
+              const isSelected = selectedSeats.includes(`${number}`);
 
               return (
                 <button
                   key={number}
-                  onClick={() => !isBooked && setSelectedSeat(`${number}`)}
+                  onClick={() => !isBooked && toggleSeatSelection(`${number}`)}
                   disabled={isBooked}
-                  className={`aspect-square rounded-full font-bold transition ${
+                  className={`aspect-square rounded-full font-bold text-sm sm:text-base transition ${
                     isBooked
                       ? 'bg-gray-800 text-gray-600 cursor-not-allowed'
                       : isSelected
@@ -165,10 +176,10 @@ export default function BookingPage({ navigate, performance }: BookingPageProps)
             </div>
           </div>
 
-          {selectedSeat && (
+          {selectedSeats.length > 0 && (
             <div className="mt-6 pt-6 border-t border-white/5">
               <p className="text-white text-center">
-                선택한 번호: <span className="text-[#FF3B5C] font-bold">{selectedSeat}번</span>
+                선택한 번호: <span className="text-[#FF3B5C] font-bold">{selectedSeats.map(s => `${s}번`).join(', ')}</span>
               </p>
             </div>
           )}
@@ -253,6 +264,12 @@ export default function BookingPage({ navigate, performance }: BookingPageProps)
               <span>티켓 가격</span>
               <span>{performance.price.toLocaleString()}원</span>
             </div>
+            {selectedSeats.length > 0 && (
+              <div className="flex justify-between text-gray-500">
+                <span>수량</span>
+                <span>{selectedSeats.length}매</span>
+              </div>
+            )}
             <div className="flex justify-between text-gray-500">
               <span>수수료</span>
               <span>0원</span>
@@ -260,7 +277,9 @@ export default function BookingPage({ navigate, performance }: BookingPageProps)
             <div className="h-px bg-white/5 my-3" />
             <div className="flex justify-between text-white text-lg">
               <span className="font-bold">총 결제 금액</span>
-              <span className="text-[#FF2E2E] font-bold">{performance.price.toLocaleString()}원</span>
+              <span className="text-[#FF2E2E] font-bold">
+                {(performance.price * Math.max(selectedSeats.length, 1)).toLocaleString()}원
+              </span>
             </div>
           </div>
         </div>
@@ -268,10 +287,10 @@ export default function BookingPage({ navigate, performance }: BookingPageProps)
         {/* Book Button */}
         <button 
           onClick={handleBooking}
-          disabled={(performance.entryType !== 'entry' && !selectedSeat)}
+          disabled={performance.entryType !== 'entry' && selectedSeats.length === 0}
           className="w-full bg-[#FF2E2E] text-white py-4 rounded-2xl hover:bg-[#cc2525] transition font-bold text-lg disabled:bg-gray-800 disabled:text-gray-600 disabled:cursor-not-allowed"
         >
-          {(performance.entryType !== 'entry' && !selectedSeat) ? '좌석/번호를 선택해주세요' : '예매하기'}
+          {performance.entryType !== 'entry' && selectedSeats.length === 0 ? '좌석/번호를 선택해주세요' : '예매하기'}
         </button>
       </div>
     </div>

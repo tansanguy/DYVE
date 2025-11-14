@@ -16,6 +16,10 @@ export default function ArtistDetailPage({ navigate, artist }: ArtistDetailPageP
     );
   }
 
+  const sanitizedName =
+    artist.name?.toLowerCase().replace(/\s+/g, '') || 'artist';
+  const portfolioUrl = artist.portfolioUrl || `https://soundcloud.com/${sanitizedName}`;
+
   return (
     <div className="min-h-screen bg-black">
       <div className="bg-black sticky top-0 z-40 border-b border-white/10">
@@ -54,8 +58,13 @@ export default function ArtistDetailPage({ navigate, artist }: ArtistDetailPageP
               <LinkIcon size={20} className="text-[#FF2E2E]" />
               <h3 className="text-white font-bold">포트폴리오</h3>
             </div>
-            <a href="#" className="text-[#FF2E2E] text-sm underline font-medium">
-              soundcloud.com/{artist.name.toLowerCase().replace(' ', '')}
+            <a 
+              href={portfolioUrl} 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              className="text-[#FF2E2E] text-sm underline font-medium"
+            >
+              {portfolioUrl.replace(/^https?:\/\//, '')}
             </a>
           </div>
 

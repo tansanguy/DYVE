@@ -15,6 +15,8 @@ import EventsPage from './components/EventsPage';
 import SupportPage from './components/SupportPage';
 import AdminPage from './components/AdminPage';
 import ReceivedProposalsPage from './components/ReceivedProposalsPage';
+import CreatePerformancePage from './components/CreatePerformancePage';
+import { Toaster } from './components/ui/sonner';
 
 export type Screen = 
   | 'home' 
@@ -32,7 +34,8 @@ export type Screen =
   | 'events' 
   | 'support' 
   | 'admin'
-  | 'receivedProposals';
+  | 'receivedProposals'
+  | 'createPerformance';
 
 export default function App() {
   const [currentScreen, setCurrentScreen] = useState<Screen>('home');
@@ -83,6 +86,8 @@ export default function App() {
         return <AdminPage navigate={navigate} />;
       case 'receivedProposals':
         return <ReceivedProposalsPage navigate={navigate} />;
+      case 'createPerformance':
+        return <CreatePerformancePage navigate={navigate} />;
       default:
         return <HomePage navigate={navigate} />;
     }
@@ -91,6 +96,7 @@ export default function App() {
   return (
     <div className="min-h-screen bg-black">
       {renderScreen()}
+      <Toaster position="top-center" richColors />
     </div>
   );
 }

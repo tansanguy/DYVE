@@ -24,7 +24,7 @@ export default function SuggestionPage({ navigate }: SuggestionPageProps) {
     <div className="min-h-screen pb-20 bg-black">
       <div className="bg-black sticky top-0 z-40 border-b border-white/10">
         <div className="px-6 py-4 flex items-center justify-between">
-          <h1 className="text-white text-xl font-extrabold">협업 제안</h1>
+          <h1 className="text-white text-xl font-extrabold">Networking</h1>
           <button 
             onClick={() => navigate('receivedProposals')}
             className="relative text-white hover:text-[#FF3B5C] transition"

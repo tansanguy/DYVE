@@ -99,7 +99,7 @@ export default function SupportPage({ navigate }: SupportPageProps) {
             <Mail size={24} className="text-[#FF2E2E]" />
             <div className="text-left">
               <h3 className="text-white mb-1 font-semibold">이메일 문의</h3>
-              <p className="text-gray-500 text-sm">supportdyve.co.kr</p>
+              <p className="text-gray-500 text-sm">support@dyve.co.kr</p>
             </div>
           </button>
 
@@ -107,7 +107,7 @@ export default function SupportPage({ navigate }: SupportPageProps) {
             <MessageCircle size={24} className="text-[#FF2E2E]" />
             <div className="text-left">
               <h3 className="text-white mb-1 font-semibold">카카오톡 문의</h3>
-              <p className="text-gray-500 text-sm">DYVE_official</p>
+              <p className="text-gray-500 text-sm">@DYVE_official</p>
             </div>
           </button>
         </div>

@@ -1,7 +1,6 @@
 import { Screen } from '../App';
 import BottomNav from './BottomNav';
-import PerformanceCard from './PerformanceCard';
-import dyveLogo from 'figma:asset/722889413d774d00135cb779a751029a918fd7c2.png';
+import dyveLogo from '../../assets/images/dyve-logo.png';
 import { ImageWithFallback } from './figma/ImageWithFallback';
 
 interface HomePageProps {

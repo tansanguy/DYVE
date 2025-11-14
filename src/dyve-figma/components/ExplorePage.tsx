@@ -4,36 +4,40 @@ import PerformanceCard from './PerformanceCard';
 import { mockPerformances } from './HomePage';
 import { Checkbox } from './ui/checkbox';
 import { useState } from 'react';
-import { ChevronDown, SlidersHorizontal, X } from 'lucide-react';
+import { SlidersHorizontal, X, Plus } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 interface ExplorePageProps {
   navigate: (screen: Screen, data?: any) => void;
 }
 
-const regions = ['전체', '서울', '경기', '인천', '강원', '충청', '전라', '경상', '제주'];
-const genres = ['전체', 'Jazz', 'Rock', 'Electronic', 'Hip-Hop', 'Indie', '디제잉', '북토크', '스탠드업 코미디', '클래식', 'R&B'];
+const genres = ['Jazz', 'Rock', 'Electronic', 'Hip-Hop', 'Indie', '디제잉', '북토크', '스탠드업 코미디', '클래식', 'R&B'];
 
 export default function ExplorePage({ navigate }: ExplorePageProps) {
   const [showDyveOnly, setShowDyveOnly] = useState(false);
   const [showFreeOnly, setShowFreeOnly] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
-  const [selectedRegion, setSelectedRegion] = useState('전체');
-  const [selectedGenre, setSelectedGenre] = useState('전체');
+  const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
+
+  const toggleGenre = (genre: string) => {
+    if (selectedGenres.includes(genre)) {
+      setSelectedGenres(selectedGenres.filter(g => g !== genre));
+    } else {
+      setSelectedGenres([...selectedGenres, genre]);
+    }
+  };
 
   const filteredPerformances = mockPerformances.filter((p) => {
     if (showDyveOnly && !p.dyveBookable) return false;
     if (showFreeOnly && p.price !== 0) return false;
-    if (selectedRegion !== '전체' && !p.venue.includes(selectedRegion)) return false;
-    if (selectedGenre !== '전체' && p.genre !== selectedGenre) return false;
+    if (selectedGenres.length > 0 && !selectedGenres.includes(p.genre)) return false;
     return true;
   });
 
-  const hasActiveFilters = selectedRegion !== '전체' || selectedGenre !== '전체' || showDyveOnly || showFreeOnly;
+  const hasActiveFilters = selectedGenres.length > 0 || showDyveOnly || showFreeOnly;
 
   const clearAllFilters = () => {
-    setSelectedRegion('전체');
-    setSelectedGenre('전체');
+    setSelectedGenres([]);
     setShowDyveOnly(false);
     setShowFreeOnly(false);
   };
@@ -43,8 +47,15 @@ export default function ExplorePage({ navigate }: ExplorePageProps) {
       <div className="bg-black/95 backdrop-blur-xl sticky top-0 z-40 border-b border-white/5">
         <div className="px-6 py-5">
           <div className="flex items-center justify-between mb-4">
-            <h1 className="text-white text-2xl font-black tracking-tight">Explore</h1>
+            <h1 className="text-white text-2xl font-black tracking-tight">Events</h1>
             <div className="flex items-center gap-3">
+              <button 
+                onClick={() => navigate('createPerformance')}
+                className="flex items-center gap-2 px-4 py-2 bg-[#FF3B5C] text-white rounded-xl hover:bg-[#d43550] transition font-semibold"
+              >
+                <Plus size={18} />
+                <span className="text-sm">공연 등록</span>
+              </button>
               <button 
                 onClick={() => navigate('receivedProposals')}
                 className="relative text-white hover:text-[#FF3B5C] transition"
@@ -118,43 +129,13 @@ export default function ExplorePage({ navigate }: ExplorePageProps) {
               className="overflow-hidden border-t border-white/5"
             >
               <div className="px-6 py-6 space-y-5 bg-[#0A0A0A]">
-                {/* Region Filter */}
-                <div>
-                  <div className="flex items-center justify-between mb-3">
-                    <label className="text-white text-sm font-bold">지역</label>
-                    {selectedRegion !== '전체' && (
-                      <button
-                        onClick={() => setSelectedRegion('전체')}
-                        className="text-[#FF3B5C] text-xs font-semibold"
-                      >
-                        초기화
-                      </button>
-                    )}
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {regions.map((region) => (
-                      <button
-                        key={region}
-                        onClick={() => setSelectedRegion(region)}
-                        className={`px-4 py-2 rounded-xl text-sm font-semibold transition ${
-                          selectedRegion === region
-                            ? 'bg-[#FF3B5C] text-white'
-                            : 'bg-[#0F0F0F] text-gray-400 border border-white/5 hover:border-[#FF3B5C]/30'
-                        }`}
-                      >
-                        {region}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
                 {/* Genre Filter */}
                 <div>
                   <div className="flex items-center justify-between mb-3">
                     <label className="text-white text-sm font-bold">장르</label>
-                    {selectedGenre !== '전체' && (
+                    {selectedGenres.length > 0 && (
                       <button
-                        onClick={() => setSelectedGenre('전체')}
+                        onClick={() => setSelectedGenres([])}
                         className="text-[#FF3B5C] text-xs font-semibold"
                       >
                         초기화
@@ -165,9 +146,9 @@ export default function ExplorePage({ navigate }: ExplorePageProps) {
                     {genres.map((genre) => (
                       <button
                         key={genre}
-                        onClick={() => setSelectedGenre(genre)}
+                        onClick={() => toggleGenre(genre)}
                         className={`px-4 py-2 rounded-xl text-sm font-semibold transition ${
-                          selectedGenre === genre
+                          selectedGenres.includes(genre)
                             ? 'bg-[#FF3B5C] text-white'
                             : 'bg-[#0F0F0F] text-gray-400 border border-white/5 hover:border-[#FF3B5C]/30'
                         }`}
@@ -198,22 +179,14 @@ export default function ExplorePage({ navigate }: ExplorePageProps) {
         {/* Active Filters Summary */}
         {hasActiveFilters && (
           <div className="my-4 flex flex-wrap gap-2">
-            {selectedRegion !== '전체' && (
-              <span className="inline-flex items-center gap-1.5 bg-[#FF3B5C]/10 text-[#FF3B5C] px-3 py-1.5 rounded-lg text-xs font-semibold border border-[#FF3B5C]/20">
-                {selectedRegion}
-                <button onClick={() => setSelectedRegion('전체')}>
+            {selectedGenres.map((genre) => (
+              <span key={genre} className="inline-flex items-center gap-1.5 bg-[#FF3B5C]/10 text-[#FF3B5C] px-3 py-1.5 rounded-lg text-xs font-semibold border border-[#FF3B5C]/20">
+                {genre}
+                <button onClick={() => toggleGenre(genre)}>
                   <X size={14} />
                 </button>
               </span>
-            )}
-            {selectedGenre !== '전체' && (
-              <span className="inline-flex items-center gap-1.5 bg-[#FF3B5C]/10 text-[#FF3B5C] px-3 py-1.5 rounded-lg text-xs font-semibold border border-[#FF3B5C]/20">
-                {selectedGenre}
-                <button onClick={() => setSelectedGenre('전체')}>
-                  <X size={14} />
-                </button>
-              </span>
-            )}
+            ))}
             {showDyveOnly && (
               <span className="inline-flex items-center gap-1.5 bg-[#FF3B5C]/10 text-[#FF3B5C] px-3 py-1.5 rounded-lg text-xs font-semibold border border-[#FF3B5C]/20">
                 DYVE 예약

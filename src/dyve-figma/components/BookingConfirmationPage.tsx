@@ -1,5 +1,5 @@
 import { Screen } from '../App';
-import { CheckCircle2, MapPin, Calendar, Clock } from 'lucide-react';
+import { CheckCircle2, MapPin, Calendar, Clock, Home, ArrowLeft } from 'lucide-react';
 
 interface BookingConfirmationPageProps {
   navigate: (screen: Screen) => void;
@@ -94,13 +94,23 @@ export default function BookingConfirmationPage({ navigate, booking }: BookingCo
           </button>
         </div>
 
-        {/* Home Button */}
-        <button 
-          onClick={() => navigate('home')}
-          className="w-full bg-[#FF2E2E] text-white py-4 rounded-2xl hover:bg-[#cc2525] transition font-bold text-lg flex items-center justify-center"
-        >
-          홈으로 돌아가기
-        </button>
+        {/* Navigation Buttons */}
+        <div className="grid grid-cols-2 gap-3">
+          <button 
+            onClick={() => window.history.back()}
+            className="w-full bg-[#1A1A1A] border border-white/10 text-white py-4 rounded-2xl hover:bg-[#2A2A2A] transition font-bold text-lg flex items-center justify-center gap-2"
+          >
+            <ArrowLeft size={20} />
+            <span>이전 화면</span>
+          </button>
+          <button 
+            onClick={() => navigate('home')}
+            className="w-full bg-[#FF2E2E] text-white py-4 rounded-2xl hover:bg-[#cc2525] transition font-bold text-lg flex items-center justify-center gap-2"
+          >
+            <Home size={20} />
+            <span>홈으로</span>
+          </button>
+        </div>
       </div>
     </div>
   );

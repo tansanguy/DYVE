@@ -9,8 +9,8 @@ interface BottomNavProps {
 export default function BottomNav({ navigate, currentScreen }: BottomNavProps) {
   const navItems = [
     { icon: Home, label: 'Home', screen: 'home' as Screen },
-    { icon: Search, label: 'Explore', screen: 'explore' as Screen },
-    { icon: Users, label: 'Suggest', screen: 'suggest' as Screen },
+    { icon: Search, label: 'Events', screen: 'explore' as Screen },
+    { icon: Users, label: 'Networking', screen: 'suggest' as Screen },
     { icon: User, label: 'MyPage', screen: 'myPage' as Screen },
   ];
 
