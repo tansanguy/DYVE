@@ -64,19 +64,23 @@ class MyPageViewSet(viewsets.ViewSet):
 
     @action(detail=False, methods=['get', 'patch'], url_path='profile')
     def profile(self, request):
-        serializer = UserSerializer(request.user, data=request.data, partial=True)
         if request.method == 'PATCH':
+            serializer = UserSerializer(request.user, data=request.data, partial=True)
             serializer.is_valid(raise_exception=True)
             serializer.save()
+        else:
+            serializer = UserSerializer(request.user)
         return Response(serializer.data)
 
     @action(detail=False, methods=['get', 'patch'], url_path='notifications')
     def notifications(self, request):
         setting, _ = NotificationSetting.objects.get_or_create(user=request.user)
-        serializer = NotificationSettingSerializer(setting, data=request.data, partial=True)
         if request.method == 'PATCH':
+            serializer = NotificationSettingSerializer(setting, data=request.data, partial=True)
             serializer.is_valid(raise_exception=True)
             serializer.save()
+        else:
+            serializer = NotificationSettingSerializer(setting)
         return Response(serializer.data)
 
     @action(detail=False, methods=['get'], url_path='reservations')
@@ -215,9 +219,6 @@ class ProposalViewSet(mixins.CreateModelMixin, mixins.ListModelMixin, viewsets.G
 
 class HomeViewSet(viewsets.ViewSet):
     permission_classes = [permissions.AllowAny]
-
-    def get_serializer(self):
-        return EventSerializer
 
     @action(detail=False, methods=['get'], url_path='banner')
     def banner(self, request):

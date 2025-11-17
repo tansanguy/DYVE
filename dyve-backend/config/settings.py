@@ -72,13 +72,10 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 REST_FRAMEWORK = {
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
-    'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.AllowAny',
-    ],
 }
 
 SPECTACULAR_SETTINGS = {
     'TITLE': 'DYVE API',
-    'DESCRIPTION': 'DYVE 공연 예약 및 네트워킹 API 스펙',
-    'VERSION': '0.1.0',
+    'DESCRIPTION': 'DYVE — Indie Artist × Venue Matching Platform',
+    'VERSION': '1.0.0',
 }
