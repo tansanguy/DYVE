@@ -48,7 +48,7 @@ export default function Home() {
           lng: DEFAULT_LOCATION.lng,
           region: DEFAULT_LOCATION.region,
         });
-        setAroundYouEvents(data);
+        setAroundYouEvents(data.events || []);
       } catch (error) {
         console.error('내 주변 공연 데이터를 불러오는 중 오류 발생', error);
         setAroundError('내 주변 공연을 불러오지 못했습니다.');
@@ -182,7 +182,7 @@ export default function Home() {
             </div>
           ) : (
             <div className="grid gap-6 md:grid-cols-3">
-              {aroundYouEvents.slice(0, 3).map((event) => renderEventCard(event))}
+              {(aroundYouEvents ?? []).slice(0, 3).map((event) => renderEventCard(event))}
             </div>
           )}
         </section>
