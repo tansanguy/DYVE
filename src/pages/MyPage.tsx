@@ -64,7 +64,8 @@ export default function MyPage() {
     toast.success(messages[type]);
   };
 
-  const goToRegister = () => navigate('/events');
+  const goToArtistRegister = () => navigate('/events/create');
+  const goToSpaceRegister = () => navigate('/spaces/create');
 
   return (
     <div className="min-h-screen pb-20 bg-black">
@@ -122,14 +123,14 @@ export default function MyPage() {
             <div className="space-y-2">
               <button
                 type="button"
-                onClick={goToRegister}
+                onClick={goToArtistRegister}
                 className="w-full bg-black border border-[#FF2E2E] text-[#FF2E2E] py-3 rounded-xl hover:bg-[#FF2E2E] hover:text-white transition font-semibold text-center"
               >
                 아티스트로 활동하기
               </button>
               <button
                 type="button"
-                onClick={goToRegister}
+                onClick={goToSpaceRegister}
                 className="w-full bg-black border border-[#FF2E2E] text-[#FF2E2E] py-3 rounded-xl hover:bg-[#FF2E2E] hover:text-white transition font-semibold text-center"
               >
                 공간 보유자로 등록하기

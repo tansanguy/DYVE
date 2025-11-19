@@ -10,7 +10,6 @@ import {
   getUpcomingEvents,
 } from '../api/home';
 import { HeroBanner } from '../components/figma/home/HeroBanner';
-import { BannerContent, BannerRail } from '../components/figma/home/BannerRail';
 import { EventPosterCard, EventCardData } from '../components/figma/cards/EventPosterCard';
 import { EventListCard } from '../components/figma/cards/EventListCard';
 import { BottomNav } from '../components/navigation/BottomNav';
@@ -31,7 +30,6 @@ export default function Home() {
   const [upcomingEvents, setUpcomingEvents] = useState<EventPreview[]>([]);
   const [currentRegion, setCurrentRegion] = useState(DEFAULT_LOCATION.region);
 
-  const [bannerStatus, setBannerStatus] = useState<'loading' | 'error' | 'idle'>('loading');
   const [aroundStatus, setAroundStatus] = useState<'loading' | 'error' | 'idle'>('loading');
   const [upcomingStatus, setUpcomingStatus] = useState<'loading' | 'error' | 'idle'>('loading');
 
@@ -40,10 +38,8 @@ export default function Home() {
       try {
         const data = await getHomeBanner();
         setBanners(data);
-        setBannerStatus('idle');
       } catch (error) {
         console.error('배너 데이터를 불러오는 중 오류 발생', error);
-        setBannerStatus('error');
       }
     };
 
@@ -97,23 +93,6 @@ export default function Home() {
     };
   }, [banners, navigate]);
 
-  const spotlightBanners: BannerContent[] = banners.map((banner) => ({
-    id: banner.id,
-    title: banner.title,
-    description: banner.description,
-    imageUrl: banner.image_url,
-    linkLabel: banner.link_url ? '바로가기' : '자세히 보기',
-    onClick: () => {
-      if (banner.link_url) {
-        if (banner.link_url.startsWith('http')) {
-          window.open(banner.link_url, '_blank');
-        } else {
-          navigate(banner.link_url);
-        }
-      }
-    },
-  }));
-
   const mapEventToCard = (event: EventPreview): EventCardData => ({
     id: event.id,
     title: event.title,
@@ -154,17 +133,6 @@ export default function Home() {
               <p className="text-sm text-white/60">현재 {currentRegion} 인근에서 진행되는 공연을 엄선했어요.</p>
             </div>
             <HeroBanner {...(heroData ?? {})} />
-          </section>
-
-          <section className="space-y-3">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs uppercase tracking-[0.32em] text-white/50">Spotlight</p>
-                <h2 className="text-2xl font-semibold">추천 배너</h2>
-              </div>
-              <span className="text-xs text-white/40">Auto Scroll</span>
-            </div>
-            {bannerStatus === 'error' ? <StatusBlock message="배너 정보를 불러오지 못했습니다." /> : <BannerRail banners={spotlightBanners} />}
           </section>
 
           <section className="space-y-4">

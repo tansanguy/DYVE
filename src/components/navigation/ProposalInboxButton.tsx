@@ -5,14 +5,14 @@ interface ProposalInboxButtonProps {
   className?: string;
 }
 
-export function ProposalInboxButton({ badgeLabel = '2', className }: ProposalInboxButtonProps) {
+export function ProposalInboxButton({ badgeLabel = '2', className = '' }: ProposalInboxButtonProps) {
   const navigate = useNavigate();
 
   return (
     <button
       type="button"
-      onClick={() => navigate('/networking/inbox')}
-      className={`relative text-white hover:text-[#FF3B5C] transition ${className ?? ''}`.trim()}
+      onClick={() => navigate('/inbox')}
+      className={`relative text-white hover:text-[#FF3B5C] transition ${className}`.trim()}
     >
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />

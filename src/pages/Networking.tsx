@@ -1,21 +1,42 @@
+import { useEffect, useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../dyve-figma/components/ui/tabs';
 import { ImageWithFallback } from '../dyve-figma/components/figma/ImageWithFallback';
 import { BottomNav } from '../components/navigation/BottomNav';
 import { ProposalInboxButton } from '../components/navigation/ProposalInboxButton';
-
-const mockArtists = [
-  { id: 1, name: 'Luna Quartet', genre: 'Jazz', bio: '감성적인 재즈 4인조 밴드' },
-  { id: 2, name: 'The Wanderers', genre: 'Rock', bio: '강렬한 인디 록 밴드' },
-  { id: 3, name: 'NEON', genre: 'Electronic', bio: '실험적 일렉트로닉 아티스트' },
-];
-
-const mockSpaces = [
-  { id: 1, name: 'Blue Note Seoul', type: 'Jazz Club', capacity: 150 },
-  { id: 2, name: 'Club FF', type: 'Live Club', capacity: 200 },
-  { id: 3, name: 'Vault', type: 'Underground Venue', capacity: 100 },
-];
+import { getArtists, getSpaces, ArtistProfile, SpaceProfile } from '../api/networking';
 
 export default function NetworkingPage() {
+  const [artists, setArtists] = useState<ArtistProfile[]>([]);
+  const [spaces, setSpaces] = useState<SpaceProfile[]>([]);
+  const [artistStatus, setArtistStatus] = useState<'loading' | 'error' | 'idle'>('loading');
+  const [spaceStatus, setSpaceStatus] = useState<'loading' | 'error' | 'idle'>('loading');
+
+  useEffect(() => {
+    const fetchArtists = async () => {
+      try {
+        const data = await getArtists();
+        setArtists(data);
+        setArtistStatus('idle');
+      } catch (error) {
+        console.error('아티스트 목록을 불러오는 중 오류', error);
+        setArtistStatus('error');
+      }
+    };
+
+    const fetchSpaces = async () => {
+      try {
+        const data = await getSpaces();
+        setSpaces(data);
+        setSpaceStatus('idle');
+      } catch (error) {
+        console.error('공간 목록을 불러오는 중 오류', error);
+        setSpaceStatus('error');
+      }
+    };
+
+    fetchArtists();
+    fetchSpaces();
+  }, []);
 
   return (
     <div className="min-h-screen pb-20 bg-black">
@@ -49,7 +70,24 @@ export default function NetworkingPage() {
           </TabsList>
 
           <TabsContent value="artists" className="space-y-3">
-            {mockArtists.map((artist) => (
+            {artistStatus === 'loading' && (
+              <div className="space-y-3">
+                {Array.from({ length: 3 }).map((_, index) => (
+                  <div key={`artist-skeleton-${index}`} className="h-32 rounded-2xl border border-white/5 bg-white/5 animate-pulse" />
+                ))}
+              </div>
+            )}
+            {artistStatus === 'error' && (
+              <div className="rounded-2xl border border-red-500/40 bg-red-500/10 p-4 text-sm text-red-200">
+                아티스트 정보를 불러오지 못했습니다.
+              </div>
+            )}
+            {artistStatus === 'idle' && artists.length === 0 && (
+              <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-center text-sm text-white/60">
+                등록된 아티스트가 없습니다.
+              </div>
+            )}
+            {artistStatus === 'idle' && artists.map((artist) => (
               <div
                 key={artist.id}
                 className="bg-[#1A1A1A] rounded-2xl overflow-hidden border border-white/5 cursor-pointer hover:border-[#FF2E2E] transition"
@@ -57,15 +95,15 @@ export default function NetworkingPage() {
                 <div className="flex gap-4 p-4">
                   <div className="w-20 h-20 flex-shrink-0 bg-black rounded-xl overflow-hidden">
                     <ImageWithFallback
-                      src="https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=200"
+                      src={artist.avatar_url || 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=200'}
                       alt={artist.name}
                       className="w-full h-full object-cover opacity-50"
                     />
                   </div>
                   <div className="flex-1">
                     <h3 className="text-white mb-1 font-semibold">{artist.name}</h3>
-                    <p className="text-[#FF2E2E] text-sm mb-2 font-medium">{artist.genre}</p>
-                    <p className="text-gray-500 text-sm">{artist.bio}</p>
+                    <p className="text-[#FF2E2E] text-sm mb-2 font-medium">{artist.genre || '장르 미정'}</p>
+                    <p className="text-gray-500 text-sm">{artist.bio || '자기소개가 아직 없습니다.'}</p>
                   </div>
                 </div>
               </div>
@@ -73,7 +111,24 @@ export default function NetworkingPage() {
           </TabsContent>
 
           <TabsContent value="spaces" className="space-y-3">
-            {mockSpaces.map((space) => (
+            {spaceStatus === 'loading' && (
+              <div className="space-y-3">
+                {Array.from({ length: 3 }).map((_, index) => (
+                  <div key={`space-skeleton-${index}`} className="h-32 rounded-2xl border border-white/5 bg-white/5 animate-pulse" />
+                ))}
+              </div>
+            )}
+            {spaceStatus === 'error' && (
+              <div className="rounded-2xl border border-red-500/40 bg-red-500/10 p-4 text-sm text-red-200">
+                공간 정보를 불러오지 못했습니다.
+              </div>
+            )}
+            {spaceStatus === 'idle' && spaces.length === 0 && (
+              <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-center text-sm text-white/60">
+                등록된 공간이 없습니다.
+              </div>
+            )}
+            {spaceStatus === 'idle' && spaces.map((space) => (
               <div
                 key={space.id}
                 className="bg-[#1A1A1A] rounded-2xl overflow-hidden border border-white/5 cursor-pointer hover:border-[#FF2E2E] transition"
@@ -81,15 +136,15 @@ export default function NetworkingPage() {
                 <div className="flex gap-4 p-4">
                   <div className="w-20 h-20 flex-shrink-0 bg-black rounded-xl overflow-hidden">
                     <ImageWithFallback
-                      src="https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=200"
+                      src={space.image_url || 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=200'}
                       alt={space.name}
                       className="w-full h-full object-cover opacity-50"
                     />
                   </div>
                   <div className="flex-1">
                     <h3 className="text-white mb-1 font-semibold">{space.name}</h3>
-                    <p className="text-[#FF2E2E] text-sm mb-2 font-medium">{space.type}</p>
-                    <p className="text-gray-500 text-sm">수용 인원: {space.capacity}명</p>
+                    <p className="text-[#FF2E2E] text-sm mb-2 font-medium">{space.type || '공간'}</p>
+                    <p className="text-gray-500 text-sm">수용 인원: {space.capacity ?? '-'}명</p>
                   </div>
                 </div>
               </div>
