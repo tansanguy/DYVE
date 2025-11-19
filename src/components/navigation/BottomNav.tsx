@@ -17,7 +17,10 @@ export function BottomNav() {
       <div className="mx-auto flex h-16 max-w-screen-sm items-center justify-around px-4">
         {NAV_ITEMS.map((item) => {
           const Icon = item.icon;
-          const isActive = location.pathname === item.path;
+          const isActive =
+            item.path === '/'
+              ? location.pathname === '/'
+              : location.pathname === item.path || location.pathname.startsWith(`${item.path}/`);
           return (
             <button
               key={item.path}

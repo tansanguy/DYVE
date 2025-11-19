@@ -118,7 +118,7 @@ export default function EventDetailPage() {
           <button
             type="button"
             disabled={!event.allow_dyve_reservation}
-            onClick={() => navigate(`/reservation/${event.id}`)}
+            onClick={() => navigate(`/booking/${event.id}`)}
             className={`w-full rounded-2xl py-4 text-lg font-bold transition ${
               event.allow_dyve_reservation
                 ? 'bg-[#FF3B5C] text-white hover:bg-[#d43550]'

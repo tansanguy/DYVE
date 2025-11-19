@@ -14,6 +14,7 @@ import { BannerContent, BannerRail } from '../components/figma/home/BannerRail';
 import { EventPosterCard, EventCardData } from '../components/figma/cards/EventPosterCard';
 import { EventListCard } from '../components/figma/cards/EventListCard';
 import { BottomNav } from '../components/navigation/BottomNav';
+import { ProposalInboxButton } from '../components/navigation/ProposalInboxButton';
 import { formatEventPrice } from '../utils/event';
 
 const DEFAULT_LOCATION = {
@@ -141,25 +142,7 @@ export default function Home() {
         <header className="sticky top-0 z-50 border-b border-white/10 bg-black/90 px-6 py-4 backdrop-blur">
           <div className="flex items-center justify-between">
             <img src={dyveLogo} alt="DYVE" className="h-7" />
-            <Link
-              to="/networking"
-              className="inline-flex items-center gap-2 rounded-full border border-white/15 px-3 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-white/70 transition hover:border-white/40 hover:text-white"
-            >
-              <svg
-                width="20"
-                height="20"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <rect x="3" y="5" width="18" height="14" rx="2" ry="2" />
-                <polyline points="3 7 12 13 21 7" />
-              </svg>
-              제안함
-            </Link>
+            <ProposalInboxButton />
           </div>
         </header>
 
@@ -213,7 +196,7 @@ export default function Home() {
                     <EventPosterCard
                       key={`around-${event.id}`}
                       event={mapEventToCard(event)}
-                      onClick={() => navigate(`/event/${event.id}`)}
+                      onClick={() => navigate(`/events/${event.id}`)}
                     />
                   ))}
                 </div>
@@ -247,7 +230,7 @@ export default function Home() {
                   <EventListCard
                     key={`upcoming-${event.id}`}
                     event={mapEventToCard(event)}
-                    onClick={() => navigate(`/event/${event.id}`)}
+                    onClick={() => navigate(`/events/${event.id}`)}
                   />
                 ))}
               </div>

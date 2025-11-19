@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { SlidersHorizontal, X, Plus } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 import { getUpcomingEvents, EventPreview } from '../api/home';
@@ -7,6 +7,7 @@ import { Checkbox } from '../dyve-figma/components/ui/checkbox';
 import { EventPerformanceCard } from '../components/figma/cards/EventPerformanceCard';
 import { EventCardData } from '../components/figma/cards/EventPosterCard';
 import { BottomNav } from '../components/navigation/BottomNav';
+import { ProposalInboxButton } from '../components/navigation/ProposalInboxButton';
 
 export default function EventsPage() {
   const navigate = useNavigate();
@@ -94,15 +95,7 @@ export default function EventsPage() {
                 <Plus size={18} />
                 공연 등록
               </button>
-              <Link to="/networking" className="relative text-white/80 transition hover:text-[#FF3B5C]">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-                  <line x1="3" y1="10" x2="21" y2="10" />
-                </svg>
-                <span className="absolute -right-1.5 -top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-[#FF3B5C] text-[10px] font-bold text-white">
-                  !
-                </span>
-              </Link>
+              <ProposalInboxButton />
               <button
                 type="button"
                 onClick={() => setShowFilters((prev) => !prev)}
@@ -235,7 +228,7 @@ export default function EventsPage() {
                 <EventPerformanceCard
                   key={event.id}
                   event={mapEventToCard(event)}
-                  onClick={() => navigate(`/event/${event.id}`)}
+                  onClick={() => navigate(`/events/${event.id}`)}
                 />
               ))}
             </div>
