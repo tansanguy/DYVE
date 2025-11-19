@@ -22,6 +22,11 @@ export interface EventPreview {
   updated_at: string;
 }
 
+export interface AroundYouResponse {
+  region: string;
+  events: EventPreview[];
+}
+
 export interface HomeBanner {
   id: number;
   title: string;
@@ -34,8 +39,8 @@ export async function getAroundYouEvents(params: {
   lat: number;
   lng: number;
   region?: string;
-}) {
-  const response = await apiClient.get<EventPreview[]>('/api/home/around-you/', {
+}): Promise<AroundYouResponse> {
+  const response = await apiClient.get<AroundYouResponse>('/api/home/around-you/', {
     params,
   });
   return response.data;

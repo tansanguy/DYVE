@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
+  AroundYouResponse,
   EventPreview,
   HomeBanner,
   getAroundYouEvents,
@@ -43,7 +44,7 @@ export default function Home() {
 
     const fetchAroundYou = async () => {
       try {
-        const data = await getAroundYouEvents({
+        const data: AroundYouResponse = await getAroundYouEvents({
           lat: DEFAULT_LOCATION.lat,
           lng: DEFAULT_LOCATION.lng,
           region: DEFAULT_LOCATION.region,
