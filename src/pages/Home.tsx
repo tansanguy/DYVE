@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useEffect, useMemo, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import dyveLogo from '../assets/images/dyve-logo.png';
 import {
   AroundYouResponse,
   EventPreview,
@@ -8,6 +9,12 @@ import {
   getHomeBanner,
   getUpcomingEvents,
 } from '../api/home';
+import { HeroBanner } from '../components/figma/home/HeroBanner';
+import { BannerContent, BannerRail } from '../components/figma/home/BannerRail';
+import { EventPosterCard, EventCardData } from '../components/figma/cards/EventPosterCard';
+import { EventListCard } from '../components/figma/cards/EventListCard';
+import { BottomNav } from '../components/navigation/BottomNav';
+import { formatEventPrice } from '../utils/event';
 
 const DEFAULT_LOCATION = {
   lat: 37.5665,
@@ -16,46 +23,40 @@ const DEFAULT_LOCATION = {
 };
 
 export default function Home() {
+  const navigate = useNavigate();
+
   const [banners, setBanners] = useState<HomeBanner[]>([]);
-  const [aroundYouEvents, setAroundYouEvents] = useState<EventPreview[]>([]);
+  const [aroundEvents, setAroundEvents] = useState<EventPreview[]>([]);
   const [upcomingEvents, setUpcomingEvents] = useState<EventPreview[]>([]);
+  const [currentRegion, setCurrentRegion] = useState(DEFAULT_LOCATION.region);
 
-  const [bannerLoading, setBannerLoading] = useState(true);
-  const [aroundLoading, setAroundLoading] = useState(true);
-  const [upcomingLoading, setUpcomingLoading] = useState(true);
-
-  const [bannerError, setBannerError] = useState<string | null>(null);
-  const [aroundError, setAroundError] = useState<string | null>(null);
-  const [upcomingError, setUpcomingError] = useState<string | null>(null);
+  const [bannerStatus, setBannerStatus] = useState<'loading' | 'error' | 'idle'>('loading');
+  const [aroundStatus, setAroundStatus] = useState<'loading' | 'error' | 'idle'>('loading');
+  const [upcomingStatus, setUpcomingStatus] = useState<'loading' | 'error' | 'idle'>('loading');
 
   useEffect(() => {
     const fetchBanners = async () => {
       try {
         const data = await getHomeBanner();
         setBanners(data);
+        setBannerStatus('idle');
       } catch (error) {
         console.error('배너 데이터를 불러오는 중 오류 발생', error);
-        setBannerError('배너 정보를 불러오지 못했습니다.');
-        alert('배너 정보를 불러오지 못했습니다.');
-      } finally {
-        setBannerLoading(false);
+        setBannerStatus('error');
       }
     };
 
-    const fetchAroundYou = async () => {
+    const fetchAround = async () => {
       try {
-        const data: AroundYouResponse = await getAroundYouEvents({
-          lat: DEFAULT_LOCATION.lat,
-          lng: DEFAULT_LOCATION.lng,
-          region: DEFAULT_LOCATION.region,
-        });
-        setAroundYouEvents(data.events || []);
+        const data: AroundYouResponse = await getAroundYouEvents(DEFAULT_LOCATION);
+        setAroundEvents(data.events || []);
+        if (data.region) {
+          setCurrentRegion(data.region);
+        }
+        setAroundStatus('idle');
       } catch (error) {
         console.error('내 주변 공연 데이터를 불러오는 중 오류 발생', error);
-        setAroundError('내 주변 공연을 불러오지 못했습니다.');
-        alert('내 주변 공연을 불러오지 못했습니다.');
-      } finally {
-        setAroundLoading(false);
+        setAroundStatus('error');
       }
     };
 
@@ -63,173 +64,220 @@ export default function Home() {
       try {
         const data = await getUpcomingEvents();
         setUpcomingEvents(data);
+        setUpcomingStatus('idle');
       } catch (error) {
         console.error('다가오는 공연 데이터를 불러오는 중 오류 발생', error);
-        setUpcomingError('다가오는 공연을 불러오지 못했습니다.');
-        alert('다가오는 공연을 불러오지 못했습니다.');
-      } finally {
-        setUpcomingLoading(false);
+        setUpcomingStatus('error');
       }
     };
 
     fetchBanners();
-    fetchAroundYou();
+    fetchAround();
     fetchUpcoming();
   }, []);
 
-  const renderEventCard = (event: EventPreview) => (
-    <Link
-      key={event.id}
-      to={`/event/${event.id}`}
-      className="flex flex-col overflow-hidden rounded-xl border border-white/10 bg-white/5 transition hover:border-white/30"
-    >
-      <div className="h-48 w-full overflow-hidden bg-black/40">
-        {event.image_url ? (
-          <img
-            src={event.image_url}
-            alt={event.title}
-            className="h-full w-full object-cover transition-transform hover:scale-105"
-          />
-        ) : (
-          <div className="flex h-full items-center justify-center text-sm text-white/60">
-            이미지 준비 중
-          </div>
-        )}
-      </div>
-      <div className="flex flex-1 flex-col gap-2 p-4 text-white">
-        <p className="text-xs uppercase tracking-wide text-white/60">{event.genre}</p>
-        <h3 className="text-lg font-semibold">{event.title}</h3>
-        <p className="line-clamp-2 text-sm text-white/70">{event.description}</p>
-        <div className="mt-auto text-sm text-white/80">
-          <p>
-            {event.date} · {event.time}
-          </p>
-          <p className="text-white/60">{event.region} · {event.venue_name}</p>
-          <p className="font-medium">
-            {event.is_free ? '무료' : `${event.price.toLocaleString()}원`}
-          </p>
-        </div>
-      </div>
-    </Link>
+  const heroData = useMemo(() => {
+    const firstBanner = banners[0];
+    if (!firstBanner) return undefined;
+    return {
+      title: firstBanner.title,
+      description: firstBanner.description,
+      imageUrl: firstBanner.image_url,
+      ctaLabel: firstBanner.link_url ? '바로가기' : '자세히 보기',
+      onAction: () => {
+        if (firstBanner.link_url) {
+          if (firstBanner.link_url.startsWith('http')) {
+            window.open(firstBanner.link_url, '_blank');
+          } else {
+            navigate(firstBanner.link_url);
+          }
+        }
+      },
+    };
+  }, [banners, navigate]);
+
+  const spotlightBanners: BannerContent[] = banners.map((banner) => ({
+    id: banner.id,
+    title: banner.title,
+    description: banner.description,
+    imageUrl: banner.image_url,
+    linkLabel: banner.link_url ? '바로가기' : '자세히 보기',
+    onClick: () => {
+      if (banner.link_url) {
+        if (banner.link_url.startsWith('http')) {
+          window.open(banner.link_url, '_blank');
+        } else {
+          navigate(banner.link_url);
+        }
+      }
+    },
+  }));
+
+  const mapEventToCard = (event: EventPreview): EventCardData => ({
+    id: event.id,
+    title: event.title,
+    artist: event.genre,
+    venue: event.venue_name,
+    region: event.region,
+    date: event.date,
+    time: event.time,
+    genre: event.genre,
+    price: event.price,
+    isFree: event.is_free,
+    imageUrl: event.image_url,
+    description: event.description,
+    allowDyveReservation: event.allow_dyve_reservation,
+  });
+
+  const StatusBlock = ({ message }: { message: string }) => (
+    <div className="rounded-3xl border border-white/10 bg-white/5 px-4 py-5 text-center text-sm text-white/70">
+      {message}
+    </div>
   );
 
   return (
-    <div className="min-h-screen bg-black px-4 py-10 text-white">
-      <div className="mx-auto flex w-full max-w-6xl flex-col gap-12">
-        <header className="space-y-2">
-          <p className="text-sm uppercase tracking-widest text-white/60">DYVE</p>
-          <h1 className="text-3xl font-bold md:text-4xl">당신 근처의 공연을 발견하세요</h1>
+    <div className="min-h-screen bg-black text-white">
+      <div className="mx-auto flex w-full max-w-screen-sm flex-col pb-24">
+        <header className="sticky top-0 z-50 border-b border-white/10 bg-black/90 px-6 py-4 backdrop-blur">
+          <div className="flex items-center justify-between">
+            <img src={dyveLogo} alt="DYVE" className="h-7" />
+            <Link
+              to="/networking"
+              className="inline-flex items-center gap-2 rounded-full border border-white/15 px-3 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-white/70 transition hover:border-white/40 hover:text-white"
+            >
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <rect x="3" y="5" width="18" height="14" rx="2" ry="2" />
+                <polyline points="3 7 12 13 21 7" />
+              </svg>
+              제안함
+            </Link>
+          </div>
         </header>
 
-        <section>
-          <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-2xl font-semibold">추천 배너</h2>
-            <span className="text-sm text-white/60">Carousel Preview</span>
-          </div>
-          {bannerLoading ? (
-            <div className="rounded-xl border border-white/10 bg-white/5 p-6 text-center text-white/70">
-              배너를 불러오는 중입니다...
+        <main className="flex flex-col gap-10 px-4 pb-10 pt-6 sm:px-6">
+          <section className="space-y-4">
+            <div className="space-y-2">
+              <p className="text-xs uppercase tracking-[0.45em] text-white/50">Dyve</p>
+              <h1 className="text-3xl font-bold leading-snug tracking-tight">당신 근처의 공연을 발견하세요</h1>
+              <p className="text-sm text-white/60">현재 {currentRegion} 인근에서 진행되는 공연을 엄선했어요.</p>
             </div>
-          ) : bannerError ? (
-            <div className="rounded-xl border border-red-500/40 bg-red-500/10 p-6 text-center text-red-200">
-              {bannerError}
+            <HeroBanner {...(heroData ?? {})} />
+          </section>
+
+          <section className="space-y-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs uppercase tracking-[0.32em] text-white/50">Spotlight</p>
+                <h2 className="text-2xl font-semibold">추천 배너</h2>
+              </div>
+              <span className="text-xs text-white/40">Auto Scroll</span>
             </div>
-          ) : (
-            <div className="grid gap-4 md:grid-cols-2">
-              {banners.map((banner) => (
-                <div
-                  key={banner.id}
-                  className="flex flex-col overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-r from-white/10 to-white/5 p-6"
-                >
-                  <p className="text-xs uppercase text-white/60">Banner #{banner.id}</p>
-                  <h3 className="mt-2 text-xl font-semibold">{banner.title}</h3>
-                  {banner.description && (
-                    <p className="mt-2 text-sm text-white/70">{banner.description}</p>
-                  )}
-                  {banner.image_url && (
-                    <img
-                      src={banner.image_url}
-                      alt={banner.title}
-                      className="mt-4 h-40 w-full rounded-xl object-cover"
+            {bannerStatus === 'error' ? <StatusBlock message="배너 정보를 불러오지 못했습니다." /> : <BannerRail banners={spotlightBanners} />}
+          </section>
+
+          <section className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs uppercase tracking-[0.32em] text-white/50">Around You</p>
+                <h2 className="text-2xl font-semibold">당신 주변에서 열리는 공연</h2>
+              </div>
+              <span className="text-xs text-white/40">위치: {currentRegion}</span>
+            </div>
+            {aroundStatus === 'loading' && (
+              <div className="relative -mx-4 px-4 sm:-mx-6 sm:px-6">
+                <div className="flex gap-4 overflow-hidden pb-4">
+                  {[0, 1, 2].map((index) => (
+                    <div
+                      key={`around-skeleton-${index}`}
+                      className="h-[320px] w-[250px] flex-shrink-0 rounded-3xl border border-white/10 bg-white/5 animate-pulse sm:w-[280px]"
                     />
-                  )}
+                  ))}
                 </div>
-              ))}
-              {banners.length === 0 && (
-                <div className="rounded-xl border border-white/10 bg-white/5 p-6 text-center text-white/70">
-                  표시할 배너가 없습니다.
+              </div>
+            )}
+            {aroundStatus === 'error' && <StatusBlock message="주변 공연을 불러오지 못했습니다." />}
+            {aroundStatus === 'idle' && aroundEvents.length === 0 && <StatusBlock message="주변 공연이 없습니다." />}
+            {aroundStatus === 'idle' && aroundEvents.length > 0 && (
+              <div className="relative -mx-4 px-4 sm:-mx-6 sm:px-6">
+                <div className="flex snap-x snap-mandatory gap-4 overflow-x-auto pb-4 scrollbar-hide">
+                  {aroundEvents.map((event) => (
+                    <EventPosterCard
+                      key={`around-${event.id}`}
+                      event={mapEventToCard(event)}
+                      onClick={() => navigate(`/event/${event.id}`)}
+                    />
+                  ))}
                 </div>
-              )}
-            </div>
-          )}
-        </section>
+              </div>
+            )}
+          </section>
 
-        <section>
-          <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-2xl font-semibold">내 주변 공연</h2>
-            <span className="text-sm text-white/60">위치: {DEFAULT_LOCATION.region}</span>
-          </div>
-          {aroundLoading ? (
-            <div className="rounded-xl border border-white/10 bg-white/5 p-6 text-center text-white/70">
-              주변 공연을 불러오는 중입니다...
+          <section className="space-y-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs uppercase tracking-[0.32em] text-white/50">Upcoming</p>
+                <h2 className="text-2xl font-semibold">다가오는 공연</h2>
+              </div>
+              <span className="text-xs text-white/40">{upcomingEvents.length}개 일정</span>
             </div>
-          ) : aroundError ? (
-            <div className="rounded-xl border border-red-500/40 bg-red-500/10 p-6 text-center text-red-200">
-              {aroundError}
-            </div>
-          ) : aroundYouEvents.length === 0 ? (
-            <div className="rounded-xl border border-white/10 bg-white/5 p-6 text-center text-white/70">
-              주변 공연이 없습니다.
-            </div>
-          ) : (
-            <div className="grid gap-6 md:grid-cols-3">
-              {(aroundYouEvents ?? []).slice(0, 3).map((event) => renderEventCard(event))}
-            </div>
-          )}
-        </section>
+            {upcomingStatus === 'loading' && (
+              <div className="flex flex-wrap gap-4">
+                {[0, 1, 2, 3].map((index) => (
+                  <div
+                    key={`upcoming-skeleton-${index}`}
+                    className="h-[220px] w-full animate-pulse rounded-3xl border border-white/10 bg-white/5 sm:basis-[calc(50%-0.5rem)]"
+                  />
+                ))}
+              </div>
+            )}
+            {upcomingStatus === 'error' && <StatusBlock message="다가오는 공연을 불러오지 못했습니다." />}
+            {upcomingStatus === 'idle' && upcomingEvents.length === 0 && <StatusBlock message="예정된 공연이 없습니다." />}
+            {upcomingStatus === 'idle' && upcomingEvents.length > 0 && (
+              <div className="flex flex-col gap-4">
+                {upcomingEvents.map((event) => (
+                  <EventListCard
+                    key={`upcoming-${event.id}`}
+                    event={mapEventToCard(event)}
+                    onClick={() => navigate(`/event/${event.id}`)}
+                  />
+                ))}
+              </div>
+            )}
+          </section>
 
-        <section>
-          <h2 className="mb-4 text-2xl font-semibold">다가오는 공연</h2>
-          {upcomingLoading ? (
-            <div className="rounded-xl border border-white/10 bg-white/5 p-6 text-center text-white/70">
-              다가오는 공연을 불러오는 중입니다...
+          <section className="space-y-3">
+            <div className="flex items-center justify-between">
+              <h2 className="text-2xl font-semibold">오늘의 하이라이트</h2>
+              <Link to="/events" className="text-sm text-white/60 underline-offset-4 hover:underline">
+                전체 공연 보기
+              </Link>
             </div>
-          ) : upcomingError ? (
-            <div className="rounded-xl border border-red-500/40 bg-red-500/10 p-6 text-center text-red-200">
-              {upcomingError}
+            <div className="rounded-3xl border border-white/10 bg-white/5 p-6">
+              <p className="text-sm text-white/60">DYVE 큐레이션</p>
+              <h3 className="mt-2 text-xl font-semibold">예약 가능 공연 수</h3>
+              <p className="text-4xl font-bold text-white/90">{upcomingEvents.filter((event) => event.allow_dyve_reservation).length}</p>
+              <p className="mt-2 text-sm text-white/60">
+                {formatEventPrice(
+                  upcomingEvents.find((event) => !event.is_free)?.price,
+                  upcomingEvents.find((event) => !event.is_free)?.is_free,
+                )}{' '}
+                부터 시작하는 특별한 공연을 만나보세요.
+              </p>
             </div>
-          ) : upcomingEvents.length === 0 ? (
-            <div className="rounded-xl border border-white/10 bg-white/5 p-6 text-center text-white/70">
-              예정된 공연이 없습니다.
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {upcomingEvents.map((event) => (
-                <Link
-                  key={`upcoming-${event.id}`}
-                  to={`/event/${event.id}`}
-                  className="flex flex-col gap-4 rounded-2xl border border-white/10 bg-white/5 p-4 transition hover:border-white/30 md:flex-row md:items-center"
-                >
-                  <div className="flex-1">
-                    <p className="text-xs uppercase tracking-wide text-white/60">{event.region}</p>
-                    <h3 className="text-xl font-semibold">{event.title}</h3>
-                    <p className="text-sm text-white/70">{event.description}</p>
-                  </div>
-                  <div className="text-right text-sm text-white/80">
-                    <p>
-                      {event.date} · {event.time}
-                    </p>
-                    <p className="text-white/60">{event.venue_name}</p>
-                    <p className="font-medium">
-                      {event.is_free ? '무료' : `${event.price.toLocaleString()}원`}
-                    </p>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          )}
-        </section>
+          </section>
+        </main>
       </div>
+
+      <BottomNav />
     </div>
   );
 }

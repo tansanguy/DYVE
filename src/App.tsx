@@ -1,20 +1,25 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import FigmaApp from './dyve-figma/App';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Home from './pages/Home';
+import EventsPage from './pages/Events';
 import EventDetailPage from './pages/EventDetail';
 import ReservationPage from './pages/ReservationPage';
-import ProposalInbox from './pages/ProposalInbox';
+import NetworkingPage from './pages/Networking';
+import MyPage from './pages/MyPage';
+import FigmaApp from './dyve-figma/App';
 
 export default function App() {
   return (
-    <BrowserRouter>
+    <Router>
       <Routes>
         <Route path="/" element={<Home />} />
+        <Route path="/events" element={<EventsPage />} />
         <Route path="/event/:id" element={<EventDetailPage />} />
         <Route path="/reservation/:id" element={<ReservationPage />} />
-        <Route path="/proposals" element={<ProposalInbox />} />
-        <Route path="/*" element={<FigmaApp />} />
+        <Route path="/networking" element={<NetworkingPage />} />
+        <Route path="/mypage" element={<MyPage />} />
+        <Route path="/proposals" element={<NetworkingPage />} />
+        <Route path="/figma/*" element={<FigmaApp />} />
       </Routes>
-    </BrowserRouter>
+    </Router>
   );
 }
