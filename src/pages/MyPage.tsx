@@ -75,6 +75,22 @@ export default function MyPage() {
     }
   };
 
+  const handleSeedOne = async () => {
+    try {
+      const res = await apiClient.post("/api/dev/seed-one/");
+      console.log("Seed result:", res.data);
+      alert("더미 데이터 1세트를 생성했습니다.");
+    } catch (err) {
+      const status = (err as { response?: { status?: number } })?.response?.status;
+      if (status === 400) {
+        alert("PRODUCTION 환경에서는 사용 불가한 기능입니다.");
+        return;
+      }
+      console.error(err);
+      alert("더미 생성 실패");
+    }
+  };
+
   const handleLogout = () => {
     logoutFromContext();
     setUserType(null);
@@ -253,6 +269,9 @@ export default function MyPage() {
             <button type="button" onClick={() => handleDevLogin('venue')} className="w-full bg-gradient-to-r from-pink-600 to-pink-500 text-white py-2.5 rounded-lg hover:from-pink-500 hover:to-pink-400 transition font-semibold text-sm text-center">
               공간 보유자로 로그인
             </button>
+            <Button type="button" onClick={handleSeedOne} className="w-full mt-3 bg-white text-black hover:bg-gray-100 font-bold">
+              DEV: 더미 데이터 생성
+            </Button>
           </div>
         </div>
       </div>
