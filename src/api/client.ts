@@ -4,9 +4,13 @@ import axios from 'axios';
 const DEFAULT_BASE_URL = 'https://dyve-backend-ui3c.onrender.com';
 const resolvedBaseURL = process.env.REACT_APP_API_BASE_URL?.trim() || DEFAULT_BASE_URL;
 
+// Render 백엔드로 세션 쿠키를 항상 전달하기 위해 전역으로 활성화한다.
+axios.defaults.withCredentials = true;
+
 // 한국어 주석: 프론트/백엔드 환경이 바뀌어도 여기만 수정하면 되도록 axios 인스턴스를 단일화한다.
 const apiClient = axios.create({
   baseURL: resolvedBaseURL,
+  withCredentials: true,
   headers: {
     Accept: 'application/json',
     'Content-Type': 'application/json',
