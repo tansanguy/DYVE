@@ -3,13 +3,34 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../dyve-figma/componen
 import { ImageWithFallback } from '../dyve-figma/components/figma/ImageWithFallback';
 import { BottomNav } from '../components/navigation/BottomNav';
 import { ProposalInboxButton } from '../components/navigation/ProposalInboxButton';
-import { getArtists, getSpaces, ArtistProfile, SpaceProfile } from '../api/networking';
+import { getArtists, getArtistDetail } from '../api/artists';
+import { getSpaces, getSpaceDetail, SpaceProfile } from '../api/spaces';
+import type { Artist } from '../types/Artist';
+import { proposalsCreate } from '../api/proposal';
+import { toast } from 'sonner';
+import { Textarea } from '../dyve-figma/components/ui/textarea';
+import { Button } from '../dyve-figma/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../dyve-figma/components/ui/dialog';
+import { useAppContext } from '../contexts/AppContext';
+import { Skeleton } from '../dyve-figma/components/ui/skeleton';
+import { DEFAULT_CARD_PLACEHOLDER } from '../constants/media';
+import { CardSkeleton } from '../components/common/CardSkeleton';
 
 export default function NetworkingPage() {
-  const [artists, setArtists] = useState<ArtistProfile[]>([]);
+  const [artists, setArtists] = useState<Artist[]>([]);
   const [spaces, setSpaces] = useState<SpaceProfile[]>([]);
   const [artistStatus, setArtistStatus] = useState<'loading' | 'error' | 'idle'>('loading');
   const [spaceStatus, setSpaceStatus] = useState<'loading' | 'error' | 'idle'>('loading');
+  const [artistDetail, setArtistDetail] = useState<Artist | null>(null);
+  const [spaceDetail, setSpaceDetail] = useState<SpaceProfile | null>(null);
+  const [artistDetailOpen, setArtistDetailOpen] = useState(false);
+  const [spaceDetailOpen, setSpaceDetailOpen] = useState(false);
+  const [artistDetailLoading, setArtistDetailLoading] = useState(false);
+  const [spaceDetailLoading, setSpaceDetailLoading] = useState(false);
+  const [proposalTarget, setProposalTarget] = useState<{ type: 'artist' | 'space'; id: number; name: string } | null>(null);
+  const [proposalContent, setProposalContent] = useState('');
+  const [sendingProposal, setSendingProposal] = useState(false);
+  const { refreshProposalCount } = useAppContext();
 
   useEffect(() => {
     const fetchArtists = async () => {
@@ -18,7 +39,7 @@ export default function NetworkingPage() {
         setArtists(data);
         setArtistStatus('idle');
       } catch (error) {
-        console.error('아티스트 목록을 불러오는 중 오류', error);
+        console.error('아티스트 목록을 불러오지 못했습니다.', error);
         setArtistStatus('error');
       }
     };
@@ -29,7 +50,7 @@ export default function NetworkingPage() {
         setSpaces(data);
         setSpaceStatus('idle');
       } catch (error) {
-        console.error('공간 목록을 불러오는 중 오류', error);
+        console.error('공간 목록을 불러오지 못했습니다.', error);
         setSpaceStatus('error');
       }
     };
@@ -38,33 +59,107 @@ export default function NetworkingPage() {
     fetchSpaces();
   }, []);
 
+  const StatusBlock = ({ message }: { message: string }) => (
+    <div className="rounded-2xl border border-[#333] bg-[#111] p-6 text-center text-sm text-gray-400">{message}</div>
+  );
+
+  const openArtistDetail = async (id: number) => {
+    setArtistDetailLoading(true);
+    try {
+      const detail = await getArtistDetail(id);
+      setArtistDetail(detail);
+      setArtistDetailOpen(true);
+    } catch (error) {
+      console.error('아티스트 상세를 불러오지 못했습니다.', error);
+      toast.error('아티스트 정보를 불러오지 못했습니다.');
+    } finally {
+      setArtistDetailLoading(false);
+    }
+  };
+
+  const openSpaceDetail = async (id: number) => {
+    setSpaceDetailLoading(true);
+    try {
+      const detail = await getSpaceDetail(id);
+      setSpaceDetail(detail);
+      setSpaceDetailOpen(true);
+    } catch (error) {
+      console.error('공간 상세를 불러오지 못했습니다.', error);
+      toast.error('공간 정보를 불러오지 못했습니다.');
+    } finally {
+      setSpaceDetailLoading(false);
+    }
+  };
+
+  const openProposalDialog = (type: 'artist' | 'space', id: number, name: string) => {
+    setProposalTarget({ type, id, name });
+    setProposalContent('');
+  };
+
+  const closeProposalDialog = () => {
+    setProposalTarget(null);
+    setProposalContent('');
+    setSendingProposal(false);
+  };
+
+  const handleSendProposal = async () => {
+    if (!proposalTarget) return;
+    if (!proposalContent.trim()) {
+      toast.error('제안 내용을 입력해주세요.');
+      return;
+    }
+
+    setSendingProposal(true);
+    try {
+      await proposalsCreate({
+        receiver_artist: proposalTarget.type === 'artist' ? proposalTarget.id : null,
+        receiver_space: proposalTarget.type === 'space' ? proposalTarget.id : null,
+        content: proposalContent.trim(),
+      });
+      toast.success('제안서가 전송되었습니다');
+      closeProposalDialog();
+      refreshProposalCount();
+    } catch (error) {
+      console.error('제안 전송 실패', error);
+      toast.error('제안서를 전송하지 못했습니다. 다시 시도해주세요.');
+    } finally {
+      setSendingProposal(false);
+    }
+  };
+
   return (
-    <div className="min-h-screen pb-20 bg-black">
-      <div className="bg-black sticky top-0 z-40 border-b border-white/10">
-        <div className="px-6 py-4 flex items-center justify-between">
-          <h1 className="text-white text-xl font-extrabold">Networking</h1>
+    <div className="min-h-screen bg-black pb-24 text-white">
+      <div className="sticky top-0 z-40 border-b border-[#222] bg-black/95 backdrop-blur">
+        <div className="mx-auto flex w-full max-w-md items-center justify-between px-4 py-4">
+          <h1 className="text-lg font-semibold text-white">Networking</h1>
           <ProposalInboxButton />
         </div>
       </div>
 
-      <div className="px-6 py-6">
-        <div className="bg-[#1A1A1A] rounded-2xl p-4 border border-white/5 mb-6">
-          <h3 className="text-white font-bold mb-2">제안 가능한 경우</h3>
-          <ul className="text-gray-400 text-sm space-y-1.5">
+      <div className="mx-auto w-full max-w-md space-y-6 px-4 py-6">
+        <div className="rounded-2xl border border-[#333] bg-[#111] p-5 shadow-[0_10px_30px_rgba(0,0,0,0.5)]">
+          <h3 className="text-base font-semibold text-white">제안 가능한 경우</h3>
+          <ul className="mt-3 space-y-1 text-sm text-gray-400">
             <li>• 아티스트 → 공간 제안</li>
             <li>• 공간 → 아티스트 제안</li>
             <li>• 아티스트 ↔ 아티스트 협업</li>
             <li>• 공간 ↔ 공간 협업</li>
           </ul>
-          <p className="text-[#FF3B5C] text-sm mt-3 font-semibold">※ 아티스트 또는 공간 프로필이 있어야 제안할 수 있습니다</p>
+          <p className="mt-4 text-sm font-semibold text-[#FF3B5C]">※ 아티스트 또는 공간 프로필이 있어야 제안할 수 있습니다</p>
         </div>
 
         <Tabs defaultValue="artists" className="w-full">
-          <TabsList className="w-full bg-[#1A1A1A] border border-white/5 mb-6">
-            <TabsTrigger value="artists" className="flex-1 data-[state=active]:bg-[#FF2E2E] data-[state=active]:text-white font-semibold">
+          <TabsList className="mb-5 flex gap-2 rounded-full bg-transparent">
+            <TabsTrigger
+              value="artists"
+              className="flex-1 rounded-full border border-[#333] px-4 py-2 text-sm font-semibold text-gray-400 data-[state=active]:border-white data-[state=active]:bg-white data-[state=active]:text-black"
+            >
               아티스트 보기
             </TabsTrigger>
-            <TabsTrigger value="spaces" className="flex-1 data-[state=active]:bg-[#FF2E2E] data-[state=active]:text-white font-semibold">
+            <TabsTrigger
+              value="spaces"
+              className="flex-1 rounded-full border border-[#333] px-4 py-2 text-sm font-semibold text-gray-400 data-[state=active]:border-white data-[state=active]:bg-white data-[state=active]:text-black"
+            >
               공간 보기
             </TabsTrigger>
           </TabsList>
@@ -73,87 +168,185 @@ export default function NetworkingPage() {
             {artistStatus === 'loading' && (
               <div className="space-y-3">
                 {Array.from({ length: 3 }).map((_, index) => (
-                  <div key={`artist-skeleton-${index}`} className="h-32 rounded-2xl border border-white/5 bg-white/5 animate-pulse" />
+                  <CardSkeleton key={`artist-skeleton-${index}`} variant="artist" />
                 ))}
               </div>
             )}
-            {artistStatus === 'error' && (
-              <div className="rounded-2xl border border-red-500/40 bg-red-500/10 p-4 text-sm text-red-200">
-                아티스트 정보를 불러오지 못했습니다.
-              </div>
-            )}
-            {artistStatus === 'idle' && artists.length === 0 && (
-              <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-center text-sm text-white/60">
-                등록된 아티스트가 없습니다.
-              </div>
-            )}
-            {artistStatus === 'idle' && artists.map((artist) => (
-              <div
-                key={artist.id}
-                className="bg-[#1A1A1A] rounded-2xl overflow-hidden border border-white/5 cursor-pointer hover:border-[#FF2E2E] transition"
-              >
-                <div className="flex gap-4 p-4">
-                  <div className="w-20 h-20 flex-shrink-0 bg-black rounded-xl overflow-hidden">
-                    <ImageWithFallback
-                      src={artist.avatar_url || 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=200'}
-                      alt={artist.name}
-                      className="w-full h-full object-cover opacity-50"
-                    />
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="text-white mb-1 font-semibold">{artist.name}</h3>
-                    <p className="text-[#FF2E2E] text-sm mb-2 font-medium">{artist.genre || '장르 미정'}</p>
-                    <p className="text-gray-500 text-sm">{artist.bio || '자기소개가 아직 없습니다.'}</p>
+            {artistStatus === 'error' && <StatusBlock message="아티스트 정보를 불러오지 못했습니다." />}
+            {artistStatus === 'idle' && artists.length === 0 && <StatusBlock message="등록된 아티스트가 없습니다." />}
+            {artistStatus === 'idle' &&
+              artists.map((artist) => (
+                <div key={artist.id} className="rounded-2xl border border-[#333] bg-[#111] p-4 shadow-[0_12px_30px_rgba(0,0,0,0.55)]">
+                  <div className="flex gap-4">
+                    <div className="h-20 w-20 flex-shrink-0 overflow-hidden rounded-xl border border-[#333] bg-black">
+                      <ImageWithFallback src={artist.image_url || DEFAULT_CARD_PLACEHOLDER} alt={artist.name} className="h-full w-full object-cover" />
+                    </div>
+                    <div className="flex flex-1 flex-col">
+                      <h3 className="text-base font-semibold text-white">{artist.name}</h3>
+                      <p className="text-sm font-semibold text-[#FF3B5C]">{artist.genre || '장르 미정'}</p>
+                      <p className="text-xs text-gray-500">{artist.region || '활동 지역 미정'}</p>
+                      <p className="mt-2 line-clamp-2 text-sm text-gray-300">{artist.bio || '자기소개가 아직 없습니다.'}</p>
+                      <div className="mt-3 flex gap-2">
+                        <Button type="button" size="sm" className="flex-1 rounded-xl bg-white text-black" onClick={() => openArtistDetail(artist.id)}>
+                          프로필 보기
+                        </Button>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="secondary"
+                          className="flex-1 rounded-xl border border-[#444] bg-transparent text-white hover:bg-white/10"
+                          onClick={() => openProposalDialog('artist', artist.id, artist.name)}
+                        >
+                          제안하기
+                        </Button>
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              ))}
           </TabsContent>
 
           <TabsContent value="spaces" className="space-y-3">
             {spaceStatus === 'loading' && (
               <div className="space-y-3">
                 {Array.from({ length: 3 }).map((_, index) => (
-                  <div key={`space-skeleton-${index}`} className="h-32 rounded-2xl border border-white/5 bg-white/5 animate-pulse" />
+                  <CardSkeleton key={`space-skeleton-${index}`} variant="space" />
                 ))}
               </div>
             )}
-            {spaceStatus === 'error' && (
-              <div className="rounded-2xl border border-red-500/40 bg-red-500/10 p-4 text-sm text-red-200">
-                공간 정보를 불러오지 못했습니다.
-              </div>
-            )}
-            {spaceStatus === 'idle' && spaces.length === 0 && (
-              <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-center text-sm text-white/60">
-                등록된 공간이 없습니다.
-              </div>
-            )}
-            {spaceStatus === 'idle' && spaces.map((space) => (
-              <div
-                key={space.id}
-                className="bg-[#1A1A1A] rounded-2xl overflow-hidden border border-white/5 cursor-pointer hover:border-[#FF2E2E] transition"
-              >
-                <div className="flex gap-4 p-4">
-                  <div className="w-20 h-20 flex-shrink-0 bg-black rounded-xl overflow-hidden">
-                    <ImageWithFallback
-                      src={space.image_url || 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=200'}
-                      alt={space.name}
-                      className="w-full h-full object-cover opacity-50"
-                    />
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="text-white mb-1 font-semibold">{space.name}</h3>
-                    <p className="text-[#FF2E2E] text-sm mb-2 font-medium">{space.type || '공간'}</p>
-                    <p className="text-gray-500 text-sm">수용 인원: {space.capacity ?? '-'}명</p>
+            {spaceStatus === 'error' && <StatusBlock message="공간 정보를 불러오지 못했습니다." />}
+            {spaceStatus === 'idle' && spaces.length === 0 && <StatusBlock message="등록된 공간이 없습니다." />}
+            {spaceStatus === 'idle' &&
+              spaces.map((space) => (
+                <div key={space.id} className="rounded-2xl border border-[#333] bg-[#111] p-4 shadow-[0_12px_30px_rgba(0,0,0,0.55)]">
+                  <div className="flex gap-4">
+                    <div className="h-20 w-20 flex-shrink-0 overflow-hidden rounded-xl border border-[#333] bg-black">
+                      <ImageWithFallback src={space.image_url || DEFAULT_CARD_PLACEHOLDER} alt={space.name} className="h-full w-full object-cover" />
+                    </div>
+                    <div className="flex flex-1 flex-col">
+                      <h3 className="text-base font-semibold text-white">{space.name}</h3>
+                      <p className="text-sm font-semibold text-[#FF3B5C]">{space.type || space.category || '공간'}</p>
+                      <p className="text-xs text-gray-500">위치: {space.location || '미정'}</p>
+                      <p className="mt-2 line-clamp-2 text-sm text-gray-300">{space.description || '공간 소개가 아직 없습니다.'}</p>
+                      <div className="mt-3 flex gap-2">
+                        <Button type="button" size="sm" className="flex-1 rounded-xl bg-white text-black" onClick={() => openSpaceDetail(space.id)}>
+                          상세 보기
+                        </Button>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="secondary"
+                          className="flex-1 rounded-xl border border-[#444] bg-transparent text-white hover:bg-white/10"
+                          onClick={() => openProposalDialog('space', space.id, space.name)}
+                        >
+                          제안하기
+                        </Button>
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              ))}
           </TabsContent>
         </Tabs>
+
+        <div className="rounded-2xl border border-[#333] bg-[#111] p-5 text-center text-sm text-gray-400">
+          내 프로필 생성과 관리는 My Page에서 진행할 수 있습니다.
+        </div>
       </div>
 
       <BottomNav />
+
+      <Dialog
+        open={artistDetailOpen}
+        onOpenChange={(open) => {
+          setArtistDetailOpen(open);
+          if (!open) {
+            setArtistDetail(null);
+          }
+        }}
+      >
+        <DialogContent className="border border-[#333] bg-[#111]">
+          <DialogHeader>
+            <DialogTitle className="text-white">아티스트 상세</DialogTitle>
+          </DialogHeader>
+          {artistDetailLoading ? (
+            <div className="space-y-3">
+              <Skeleton className="h-40 w-full rounded-2xl bg-white/10" />
+              <Skeleton className="h-4 w-1/2 rounded-full bg-white/10" />
+            </div>
+          ) : artistDetail ? (
+            <div className="space-y-3 text-sm text-gray-300">
+              <p className="text-lg font-bold text-white">{artistDetail.name}</p>
+              <p>장르: {artistDetail.genre || '-'}</p>
+              <p>지역: {artistDetail.region || '-'}</p>
+              <p>{artistDetail.bio || '소개가 없습니다.'}</p>
+            </div>
+          ) : (
+            <p className="text-sm text-gray-400">아티스트 정보를 찾을 수 없습니다.</p>
+          )}
+        </DialogContent>
+      </Dialog>
+
+ 	    <Dialog
+        open={spaceDetailOpen}
+        onOpenChange={(open) => {
+          setSpaceDetailOpen(open);
+          if (!open) {
+            setSpaceDetail(null);
+          }
+        }}
+      >
+        <DialogContent className="border border-[#333] bg-[#111]">
+          <DialogHeader>
+            <DialogTitle className="text-white">공간 상세</DialogTitle>
+          </DialogHeader>
+          {spaceDetailLoading ? (
+            <div className="space-y-3">
+              <Skeleton className="h-40 w-full rounded-2xl bg-white/10" />
+              <Skeleton className="h-4 w-1/2 rounded-full bg-white/10" />
+            </div>
+          ) : spaceDetail ? (
+            <div className="space-y-3 text-sm text-gray-300">
+              <p className="text-lg font-bold text-white">{spaceDetail.name}</p>
+              <p>유형: {spaceDetail.category || spaceDetail.type || '-'}</p>
+              <p>위치: {spaceDetail.location || '-'}</p>
+              <p>{spaceDetail.description || '공간 설명이 없습니다.'}</p>
+            </div>
+          ) : (
+            <p className="text-sm text-gray-400">공간 정보를 찾을 수 없습니다.</p>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={Boolean(proposalTarget)}
+        onOpenChange={(open) => {
+          if (!open) {
+            closeProposalDialog();
+          }
+        }}
+      >
+        <DialogContent className="border border-[#333] bg-[#111]">
+          <DialogHeader>
+            <DialogTitle className="text-white">{proposalTarget ? `${proposalTarget.name}에게 제안 보내기` : '제안'}</DialogTitle>
+          </DialogHeader>
+          <Textarea
+            placeholder="제안 내용을 입력하세요"
+            value={proposalContent}
+            onChange={(e) => setProposalContent(e.target.value)}
+            className="rounded-2xl border border-[#333] bg-black text-white placeholder:text-gray-600"
+            rows={5}
+          />
+          <div className="flex gap-3 pt-4">
+            <Button type="button" className="flex-1" onClick={handleSendProposal} disabled={sendingProposal}>
+              {sendingProposal ? '전송 중...' : '제안 보내기'}
+            </Button>
+            <Button type="button" variant="secondary" className="flex-1 border border-[#444] bg-transparent text-white hover:bg-white/10" onClick={closeProposalDialog}>
+              취소
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

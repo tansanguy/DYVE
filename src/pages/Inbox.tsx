@@ -3,18 +3,22 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Calendar, User, Building2, CheckCircle2, XCircle } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../dyve-figma/components/ui/tabs';
 import { getReceivedProposals, Proposal } from '../api/proposal';
+import { formatTimestamp } from '../utils/event';
+import { useAppContext } from '../contexts/AppContext';
 
 export default function InboxPage() {
   const navigate = useNavigate();
   const [proposals, setProposals] = useState<Proposal[]>([]);
   const [selectedProposal, setSelectedProposal] = useState<Proposal | null>(null);
   const [status, setStatus] = useState<'loading' | 'error' | 'idle'>('loading');
+  const { refreshProposalCount } = useAppContext();
 
   useEffect(() => {
     const load = async () => {
       try {
         const data = await getReceivedProposals();
         setProposals(data);
+        refreshProposalCount();
         setStatus('idle');
       } catch (error) {
         console.error('제안함 데이터를 불러오지 못했습니다.', error);
@@ -22,7 +26,7 @@ export default function InboxPage() {
       }
     };
     load();
-  }, []);
+  }, [refreshProposalCount]);
 
   const grouped = {
     pending: proposals.filter((proposal) => proposal.status === 'pending'),
@@ -63,7 +67,7 @@ export default function InboxPage() {
       <p className="text-gray-400 text-sm line-clamp-2 mb-3">{proposal.content}</p>
       <div className="flex items-center gap-2 text-gray-600 text-xs">
         <Calendar size={14} />
-        <span>{new Date(proposal.sent_at).toLocaleDateString()}</span>
+        <span>{formatTimestamp(proposal.sent_at)}</span>
       </div>
     </div>
   );
@@ -156,7 +160,7 @@ export default function InboxPage() {
                   </p>
                   <div className="flex items-center gap-2 text-gray-600 text-xs">
                     <Calendar size={14} />
-                    <span>{new Date(selectedProposal.sent_at).toLocaleString()}</span>
+                    <span>{formatTimestamp(selectedProposal.sent_at)}</span>
                   </div>
                 </div>
               </div>

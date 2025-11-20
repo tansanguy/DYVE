@@ -2,14 +2,17 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Calendar, Clock, MapPin, Tag } from 'lucide-react';
 import { EventDetail, getEventDetail } from '../api/events';
+import { createReservation } from '../api/reservation';
 import { ImageWithFallback } from '../dyve-figma/components/figma/ImageWithFallback';
-import { formatEventPrice, getDDayLabel } from '../utils/event';
+import { formatEventDateTime, formatEventPrice, getDDayLabel } from '../utils/event';
+import { toast } from 'sonner';
 
 export default function EventDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [event, setEvent] = useState<EventDetail | null>(null);
   const [status, setStatus] = useState<'loading' | 'error' | 'idle'>('loading');
+  const [creatingReservation, setCreatingReservation] = useState(false);
 
   useEffect(() => {
     const eventId = Number(id);
@@ -50,7 +53,35 @@ export default function EventDetailPage() {
   }
 
   const dDayLabel = getDDayLabel(event.date);
-  const priceLabel = formatEventPrice(event.price, event.is_free);
+  const scheduleLabel = formatEventDateTime(event.date, event.time);
+  const entryTypeMap: Record<string, string> = {
+    seat: '지정 좌석',
+    number: '입장 번호',
+    entry: '일반 입장',
+    standing: '스탠딩 입장',
+    firstcome: '선착순 입장',
+  };
+  const entryTypeLabel = entryTypeMap[event.entry_type] ?? '입장 방식 미정';
+  const priceLabel = formatEventPrice(event.price_min ?? event.price, event.is_free, event.price_max ?? event.price);
+
+  // 한국어 주석: 좌석 선택 없이도 예매 버튼을 누르면 바로 예약이 생성되도록 빠른 예매를 구현한다.
+  const handleQuickReservation = async () => {
+    if (!event?.allow_dyve_reservation || creatingReservation) return;
+    setCreatingReservation(true);
+    try {
+      await createReservation({
+        event: event.id,
+        quantity: 1,
+        seat: '빠른 예매',
+      });
+      toast.success('예매가 완료되었습니다');
+    } catch (error) {
+      console.error('빠른 예매 실패', error);
+      toast.error('예매를 완료하지 못했습니다');
+    } finally {
+      setCreatingReservation(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-black text-white">
@@ -83,7 +114,7 @@ export default function EventDetailPage() {
           <div>
             <p className="text-sm uppercase text-white/60">{event.genre}</p>
             <h2 className="mt-2 text-3xl font-bold leading-tight">{event.title}</h2>
-            <p className="mt-2 text-sm text-white/70">{event.description}</p>
+            {event.description && <p className="mt-2 text-sm text-white/70 leading-relaxed">{event.description}</p>}
           </div>
 
           <div className="space-y-3 text-sm text-white/80">
@@ -93,11 +124,11 @@ export default function EventDetailPage() {
             </div>
             <div className="flex items-center gap-3">
               <Calendar className="text-[#FF3B5C]" size={18} />
-              <span className="font-medium">{event.date}</span>
+              <span className="font-medium">{scheduleLabel}</span>
             </div>
             <div className="flex items-center gap-3">
               <Clock className="text-[#FF3B5C]" size={18} />
-              <span className="font-medium">{event.time}</span>
+              <span className="font-medium">{entryTypeLabel}</span>
             </div>
             <div className="flex items-center gap-3">
               <Tag className="text-[#FF3B5C]" size={18} />
@@ -107,7 +138,7 @@ export default function EventDetailPage() {
 
           <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
             <p className="text-sm text-white/60">가격</p>
-            <p className="text-2xl font-bold text-white">{priceLabel}</p>
+            <p className="text-2xl font-bold text-white whitespace-nowrap">{priceLabel}</p>
           </div>
 
           <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
@@ -117,15 +148,15 @@ export default function EventDetailPage() {
 
           <button
             type="button"
-            disabled={!event.allow_dyve_reservation}
-            onClick={() => navigate(`/booking/${event.id}`)}
+            disabled={!event.allow_dyve_reservation || creatingReservation}
+            onClick={handleQuickReservation}
             className={`w-full rounded-2xl py-4 text-lg font-bold transition ${
               event.allow_dyve_reservation
                 ? 'bg-[#FF3B5C] text-white hover:bg-[#d43550]'
                 : 'bg-gray-800 text-gray-500 cursor-not-allowed'
             }`}
           >
-            {event.allow_dyve_reservation ? 'DYVE로 예매하기' : '외부 예매만 가능합니다'}
+            {event.allow_dyve_reservation ? (creatingReservation ? '예매 중...' : 'DYVE로 예매하기') : '외부 예매만 가능합니다'}
           </button>
 
           <Link

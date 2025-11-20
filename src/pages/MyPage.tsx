@@ -64,8 +64,8 @@ export default function MyPage() {
     toast.success(messages[type]);
   };
 
-  const goToArtistRegister = () => navigate('/events/create');
-  const goToSpaceRegister = () => navigate('/spaces/create');
+  const goToArtistRegister = () => navigate('/mypage/artist-profile');
+  const goToSpaceRegister = () => navigate('/events/register?tab=space');
 
   return (
     <div className="min-h-screen pb-20 bg-black">

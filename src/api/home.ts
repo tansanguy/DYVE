@@ -1,26 +1,7 @@
+import { EventSummary } from '../types/Event';
 import { apiClient } from './client';
 
-export interface EventPreview {
-  id: number;
-  title: string;
-  description: string;
-  genre: string;
-  region: string;
-  date: string;
-  time: string;
-  venue_name: string;
-  address: string;
-  price: number;
-  is_free: boolean;
-  entry_type: string;
-  image_url: string;
-  allow_dyve_reservation: boolean;
-  advertise: boolean;
-  space: number;
-  artists: number[];
-  created_at: string;
-  updated_at: string;
-}
+export type EventPreview = EventSummary;
 
 export interface AroundYouResponse {
   region: string;
@@ -35,14 +16,14 @@ export interface HomeBanner {
   link_url?: string;
 }
 
-export async function getAroundYouEvents(params: {
+export interface AroundYouParams {
   lat: number;
   lng: number;
   region?: string;
-}): Promise<AroundYouResponse> {
-  const response = await apiClient.get<AroundYouResponse>('/api/home/around-you/', {
-    params,
-  });
+}
+
+export async function getAroundYou(params: AroundYouParams): Promise<AroundYouResponse> {
+  const response = await apiClient.get<AroundYouResponse>('/api/home/around-you/', { params });
   return response.data;
 }
 

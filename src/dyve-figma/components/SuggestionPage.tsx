@@ -2,15 +2,37 @@ import { Screen } from '../App';
 import BottomNav from './BottomNav';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { ImageWithFallback } from './figma/ImageWithFallback';
+import type { Artist } from '../../types/Artist';
 
 interface SuggestionPageProps {
   navigate: (screen: Screen, data?: any) => void;
 }
 
-const mockArtists = [
-  { id: 1, name: 'Luna Quartet', genre: 'Jazz', bio: '감성적인 재즈 4인조 밴드' },
-  { id: 2, name: 'The Wanderers', genre: 'Rock', bio: '강렬한 인디 록 밴드' },
-  { id: 3, name: 'NEON', genre: 'Electronic', bio: '실험적 일렉트로닉 아티스트' },
+const ARTIST_IMAGE_FALLBACK =
+  'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=200&auto=format&fit=crop';
+
+const mockArtists: Artist[] = [
+  {
+    id: 1,
+    name: 'Luna Quartet',
+    genre: 'Jazz',
+    bio: '감성적인 재즈 4인조 밴드',
+    image_url: 'https://images.unsplash.com/photo-1507878866276-a947ef722fee?w=800&auto=format&fit=crop',
+  },
+  {
+    id: 2,
+    name: 'The Wanderers',
+    genre: 'Rock',
+    bio: '강렬한 인디 록 밴드',
+    image_url: 'https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?w=800&auto=format&fit=crop',
+  },
+  {
+    id: 3,
+    name: 'NEON',
+    genre: 'Electronic',
+    bio: '실험적 일렉트로닉 아티스트',
+    image_url: 'https://images.unsplash.com/photo-1487215078519-e21cc028cb29?w=800&auto=format&fit=crop',
+  },
 ];
 
 const mockSpaces = [
@@ -80,8 +102,9 @@ export default function SuggestionPage({ navigate }: SuggestionPageProps) {
               >
                 <div className="flex gap-4 p-4">
                   <div className="w-20 h-20 flex-shrink-0 bg-black rounded-xl overflow-hidden">
-                    <ImageWithFallback 
-                      src="https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=200"
+                    {/* image_url만 읽도록 통일하고 없으면 fallback 이미지를 사용한다. */}
+                    <ImageWithFallback
+                      src={artist.image_url || ARTIST_IMAGE_FALLBACK}
                       alt={artist.name}
                       className="w-full h-full object-cover opacity-50"
                     />

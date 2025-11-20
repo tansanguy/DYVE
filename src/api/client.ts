@@ -1,24 +1,36 @@
 // src/api/client.ts
-import axios from "axios";
+import axios from 'axios';
 
-const FALLBACK_BASE_URL = "https://dyve-backend-ui3c.onrender.com";
-const ENV_BASE_URL = process.env.REACT_APP_API_BASE_URL?.trim();
+const DEFAULT_BASE_URL = 'https://dyve-backend-ui3c.onrender.com';
+const resolvedBaseURL = process.env.REACT_APP_API_BASE_URL?.trim() || DEFAULT_BASE_URL;
 
-if (!ENV_BASE_URL) {
-  console.warn(
-    "⚠️ REACT_APP_API_BASE_URL 가 설정되지 않았습니다. 기본값을 사용합니다:",
-    FALLBACK_BASE_URL,
-  );
-}
-
-const resolvedBaseURL = ENV_BASE_URL || FALLBACK_BASE_URL;
-console.log("🌐 DYVE apiClient baseURL =>", resolvedBaseURL);
-
+// 한국어 주석: 프론트/백엔드 환경이 바뀌어도 여기만 수정하면 되도록 axios 인스턴스를 단일화한다.
 const apiClient = axios.create({
   baseURL: resolvedBaseURL,
-  // 백엔드에서 쿠키/세션 쓸 일 있으면 true
-  // withCredentials: true,
+  headers: {
+    Accept: 'application/json',
+    'Content-Type': 'application/json',
+  },
 });
+
+// 한국어 주석: 모든 응답에서 data.data 형태를 제거해 FE 사용성이 좋아지도록 인터셉터에서 통일한다.
+apiClient.interceptors.response.use(
+  (response) => {
+    const normalizedData =
+      response?.data && typeof response.data === 'object' && 'data' in response.data
+        ? (response.data as { data: unknown }).data
+        : response.data;
+    return { ...response, data: normalizedData };
+  },
+  (error: { response?: { data?: { message?: string; detail?: string }; status?: number } } & Error) => {
+    const fallbackMessage = 'API 요청 중 오류가 발생했습니다.';
+    const serverMessage = error.response?.data?.message || error.response?.data?.detail;
+    const normalizedMessage = serverMessage || fallbackMessage;
+    error.message = normalizedMessage;
+    console.error('[DYVE] API Error:', normalizedMessage, error.response);
+    return Promise.reject(error);
+  },
+);
 
 export { apiClient };
 export default apiClient;

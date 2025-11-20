@@ -1,5 +1,6 @@
 import { ImageWithFallback } from '../../../dyve-figma/components/figma/ImageWithFallback';
-import { formatEventPrice, getDDayLabel } from '../../../utils/event';
+import { DEFAULT_CARD_PLACEHOLDER } from '../../../constants/media';
+import { formatEventDateTime, formatEventPrice, getDDayLabel } from '../../../utils/event';
 
 export interface EventCardData {
   id?: number | string;
@@ -11,6 +12,8 @@ export interface EventCardData {
   time?: string;
   genre?: string;
   price?: number;
+  priceMin?: number | null;
+  priceMax?: number | null;
   isFree?: boolean;
   imageUrl?: string;
   description?: string;
@@ -36,8 +39,15 @@ const fallbackEvent: EventCardData = {
 
 export function EventPosterCard({ event, onClick }: EventPosterCardProps) {
   const data = { ...fallbackEvent, ...event };
-  const priceLabel = formatEventPrice(data.price, data.isFree);
+  // 한국어 주석: 가격 범위와 placeholder 이미지를 하나의 포맷으로 맞춰 카드들 사이 레이아웃이 흔들리지 않도록 한다.
+  const priceLabel = formatEventPrice(
+    data.priceMin ?? data.price,
+    data.isFree,
+    data.priceMax ?? data.price,
+  );
   const dDayLabel = getDDayLabel(data.date);
+  const scheduleLabel = formatEventDateTime(data.date, data.time);
+  const coverImage = data.imageUrl || DEFAULT_CARD_PLACEHOLDER;
 
   return (
     <button
@@ -47,7 +57,7 @@ export function EventPosterCard({ event, onClick }: EventPosterCardProps) {
     >
       <div className="relative h-44 w-full overflow-hidden">
         <ImageWithFallback
-          src={data.imageUrl}
+          src={coverImage}
           alt={data.title}
           className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
         />
@@ -63,11 +73,9 @@ export function EventPosterCard({ event, onClick }: EventPosterCardProps) {
         <p className="text-sm text-white/70 line-clamp-1">{data.artist}</p>
         <p className="text-sm text-white/60">{data.venue}</p>
         <div className="mt-auto space-y-1 text-sm text-white/70">
-          <p className="font-medium text-white/90">
-            {data.date} · {data.time}
-          </p>
+          <p className="font-medium text-white/90">{scheduleLabel}</p>
           <p className="text-white/60">{data.region}</p>
-          <p className="text-base font-semibold text-white">{priceLabel}</p>
+          <p className="text-base font-semibold text-white whitespace-nowrap tabular-nums leading-none">{priceLabel}</p>
         </div>
       </div>
     </button>

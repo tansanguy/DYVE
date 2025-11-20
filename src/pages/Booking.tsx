@@ -3,7 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, CheckCircle2 } from 'lucide-react';
 import { getEventDetail, EventDetail } from '../api/events';
 import { createReservation, ReservationResponse } from '../api/reservation';
-import { formatEventPrice, getDDayLabel } from '../utils/event';
+import { formatEventDateTime, formatEventPrice, getDDayLabel } from '../utils/event';
 import { ImageWithFallback } from '../dyve-figma/components/figma/ImageWithFallback';
 
 const DEFAULT_SEATING = { rows: 5, cols: 6 };
@@ -41,25 +41,45 @@ export default function BookingPage() {
     fetchEvent();
   }, [eventId]);
 
-  const entryType = event?.entry_type ?? 'entry';
+  const rawEntryType = event?.entry_type ?? 'entry';
+  const normalizedEntryType =
+    rawEntryType === 'seat'
+      ? 'seat'
+      : rawEntryType === 'standing' || rawEntryType === 'number'
+        ? 'number'
+        : 'entry';
+  const entryTypeLabelMap: Record<string, string> = {
+    seat: '지정 좌석',
+    number: '입장 번호',
+    standing: '스탠딩 입장번호',
+    entry: '일반 입장',
+    firstcome: '선착순 입장',
+  };
+  const entryTypeLabel = entryTypeLabelMap[rawEntryType] ?? entryTypeLabelMap[normalizedEntryType];
   const seatingInfo = useMemo(() => {
-    if (entryType === 'number') {
-      return event && 'seatingInfo' in event ? (event as any).seatingInfo ?? DEFAULT_NUMBER_GRID : DEFAULT_NUMBER_GRID;
+    if (!event) {
+      return normalizedEntryType === 'number' ? DEFAULT_NUMBER_GRID : DEFAULT_SEATING;
     }
-    if (entryType === 'seat') {
-      return event && 'seatingInfo' in event ? (event as any).seatingInfo ?? DEFAULT_SEATING : DEFAULT_SEATING;
+    if (normalizedEntryType === 'number') {
+      const totalSeats = event.total_seats ?? DEFAULT_NUMBER_GRID.rows * DEFAULT_NUMBER_GRID.cols;
+      const cols = event.seat_cols ?? DEFAULT_NUMBER_GRID.cols;
+      const rows = Math.max(1, Math.ceil(totalSeats / cols));
+      return { rows, cols };
     }
-    return DEFAULT_SEATING;
-  }, [entryType, event]);
+    return {
+      rows: event.seat_rows ?? DEFAULT_SEATING.rows,
+      cols: event.seat_cols ?? DEFAULT_SEATING.cols,
+    };
+  }, [event, normalizedEntryType]);
 
   const totalPrice = useMemo(() => {
     if (!event) return 0;
     if (event.is_free) return 0;
-    if (entryType === 'entry') {
+    if (normalizedEntryType === 'entry') {
       return event.price * quantity;
     }
     return event.price * Math.max(selectedSeats.length, 1);
-  }, [entryType, event, quantity, selectedSeats.length]);
+  }, [event, normalizedEntryType, quantity, selectedSeats.length]);
 
   const toggleSeatSelection = (seatId: string) => {
     setSelectedSeats((prev) => (prev.includes(seatId) ? prev.filter((seat) => seat !== seatId) : [...prev, seatId]));
@@ -67,16 +87,16 @@ export default function BookingPage() {
 
   const handleReservation = async () => {
     if (!event) return;
-    if (entryType !== 'entry' && selectedSeats.length === 0) {
+    if (normalizedEntryType !== 'entry' && selectedSeats.length === 0) {
       alert('최소 한 개 이상의 좌석/번호를 선택해 주세요.');
       return;
     }
 
     setSubmitting(true);
     try {
-      const payloadQuantity = entryType === 'entry' ? quantity : Math.max(selectedSeats.length, 1);
+      const payloadQuantity = normalizedEntryType === 'entry' ? quantity : Math.max(selectedSeats.length, 1);
       const seatLabel =
-        entryType === 'entry'
+        normalizedEntryType === 'entry'
           ? `일반 입장 x${quantity}`
           : selectedSeats.length
             ? selectedSeats.join(', ')
@@ -128,8 +148,10 @@ export default function BookingPage() {
     );
   }
 
+  const scheduleLabel = formatEventDateTime(event.date, event.time);
+
   const renderSeatSelector = () => {
-    if (entryType === 'entry') {
+    if (normalizedEntryType === 'entry') {
       return (
         <div className="space-y-4">
           <h3 className="text-white font-bold">입장 수량</h3>
@@ -157,7 +179,7 @@ export default function BookingPage() {
       );
     }
 
-    if (entryType === 'number') {
+    if (normalizedEntryType === 'number') {
       const total = seatingInfo.rows * seatingInfo.cols;
       const booked = [3, 7, 12, 17, 21];
       const columns = Math.min(seatingInfo.cols, 6);
@@ -268,14 +290,16 @@ export default function BookingPage() {
             <div className="space-y-3 bg-[#0F0F0F] p-5">
               <p className="text-xs uppercase tracking-[0.32em] text-white/50">{event.genre}</p>
               <h2 className="text-2xl font-bold leading-tight">{event.title}</h2>
-              <div className="flex flex-wrap gap-3 text-sm text-white/70">
-                <span>{event.date}</span>
-                <span>·</span>
-                <span>{event.time}</span>
-                <span>·</span>
+              <div className="flex flex-wrap items-center gap-2 text-sm text-white/70">
+                <span className="font-medium">{scheduleLabel}</span>
+                <span className="text-white/40">•</span>
                 <span>{event.venue_name}</span>
+                <span className="text-white/40">•</span>
+                <span>{event.region}</span>
               </div>
-              <div className="text-white text-xl font-bold">{formatEventPrice(event.price, event.is_free)}</div>
+              <div className="text-white text-xl font-bold whitespace-nowrap">
+                {formatEventPrice(event.price_min ?? event.price, event.is_free, event.price_max ?? event.price)}
+              </div>
             </div>
           </div>
         </section>
@@ -287,15 +311,17 @@ export default function BookingPage() {
           <div className="rounded-3xl border border-white/10 bg-white/5 p-5 space-y-3">
             <div className="flex items-center justify-between text-sm text-white/60">
               <span>입장 방식</span>
-              <span className="font-semibold text-white">{entryType === 'seat' ? '지정 좌석' : entryType === 'number' ? '번호표' : '일반 입장'}</span>
+              <span className="font-semibold text-white">{entryTypeLabel}</span>
             </div>
             <div className="flex items-center justify-between text-sm text-white/60">
               <span>선택 수량</span>
-              <span className="font-semibold text-white">{entryType === 'entry' ? quantity : Math.max(selectedSeats.length, 1)}명</span>
+              <span className="font-semibold text-white">
+                {normalizedEntryType === 'entry' ? quantity : Math.max(selectedSeats.length, 1)}명
+              </span>
             </div>
             <div className="flex items-center justify-between text-lg font-bold text-white">
               <span>총 결제 금액</span>
-              <span>{event.is_free ? '무료' : formatEventPrice(totalPrice, false)}</span>
+              <span className="whitespace-nowrap">{event.is_free ? '무료' : formatEventPrice(totalPrice, false)}</span>
             </div>
           </div>
           <button

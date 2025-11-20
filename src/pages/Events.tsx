@@ -2,17 +2,21 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { SlidersHorizontal, X, Plus } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
-import { getUpcomingEvents, EventPreview } from '../api/home';
+import { getEvents } from '../api/events';
 import { Checkbox } from '../dyve-figma/components/ui/checkbox';
 import { EventPerformanceCard } from '../components/figma/cards/EventPerformanceCard';
 import { EventCardData } from '../components/figma/cards/EventPosterCard';
 import { BottomNav } from '../components/navigation/BottomNav';
 import { ProposalInboxButton } from '../components/navigation/ProposalInboxButton';
+import { useAppContext } from '../contexts/AppContext';
+import type { EventSummary } from '../types/Event';
+import { CardSkeleton } from '../components/common/CardSkeleton';
 
 export default function EventsPage() {
   const navigate = useNavigate();
-  const [events, setEvents] = useState<EventPreview[]>([]);
+  const [events, setEvents] = useState<EventSummary[]>([]);
   const [status, setStatus] = useState<'loading' | 'error' | 'idle'>('loading');
+  const { genres: metaGenres } = useAppContext();
 
   const [showFilters, setShowFilters] = useState(false);
   const [showDyveOnly, setShowDyveOnly] = useState(false);
@@ -22,7 +26,7 @@ export default function EventsPage() {
   useEffect(() => {
     const fetchEvents = async () => {
       try {
-        const data = await getUpcomingEvents();
+        const data = await getEvents();
         setEvents(data);
         setStatus('idle');
       } catch (error) {
@@ -35,9 +39,10 @@ export default function EventsPage() {
   }, []);
 
   const genres = useMemo(() => {
+    if (metaGenres.length) return metaGenres;
     const unique = new Set(events.map((event) => event.genre).filter(Boolean));
     return Array.from(unique);
-  }, [events]);
+  }, [events, metaGenres]);
 
   const filteredEvents = events.filter((event) => {
     if (showDyveOnly && !event.allow_dyve_reservation) return false;
@@ -59,13 +64,13 @@ export default function EventsPage() {
   };
 
   const statusMessage = () => {
-    if (status === 'loading') return '공연을 불러오는 중입니다...';
     if (status === 'error') return '공연 목록을 불러오지 못했습니다.';
-    if (filteredEvents.length === 0) return '조건에 맞는 공연이 없습니다.';
+    if (status === 'idle' && filteredEvents.length === 0) return '조건에 맞는 공연이 없습니다.';
     return null;
   };
 
-  const mapEventToCard = (event: EventPreview): EventCardData => ({
+  // 한국어 주석: 카드 컴포넌트에 동일한 가격 필드를 넘겨 가격 줄바꿈 문제를 방지한다.
+  const mapEventToCard = (event: EventSummary): EventCardData => ({
     id: event.id,
     title: event.title,
     artist: event.genre,
@@ -74,6 +79,8 @@ export default function EventsPage() {
     time: event.time,
     genre: event.genre,
     price: event.price,
+    priceMin: event.price_min ?? event.price,
+    priceMax: event.price_max ?? event.price,
     isFree: event.is_free,
     imageUrl: event.image_url,
   });
@@ -89,7 +96,7 @@ export default function EventsPage() {
             <div className="flex items-center gap-3">
               <button
                 type="button"
-                onClick={() => navigate('/events/create')}
+                onClick={() => navigate('/events/register')}
                 className="flex items-center gap-2 rounded-xl bg-[#FF3B5C] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#d43550]"
               >
                 <Plus size={18} />
@@ -220,7 +227,13 @@ export default function EventsPage() {
 
           <p className="mb-4 text-sm text-white/60">총 {filteredEvents.length}개의 공연</p>
 
-          {message ? (
+          {status === 'loading' ? (
+            <div className="space-y-3 pb-6">
+              {Array.from({ length: 3 }).map((_, index) => (
+                <CardSkeleton key={`event-skeleton-${index}`} variant="event" />
+              ))}
+            </div>
+          ) : message ? (
             <div className="rounded-2xl border border-white/10 bg-white/5 p-6 text-center text-sm text-white/70">{message}</div>
           ) : (
             <div className="space-y-3 pb-6">

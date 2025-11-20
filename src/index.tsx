@@ -4,14 +4,18 @@ import './dyve-figma/globals.css';
 import './index.css';
 import App from './App';
 import reportWebVitals from './reportWebVitals';
+import { AppProvider } from './contexts/AppContext';
 
 const root = ReactDOM.createRoot(
   document.getElementById('root') as HTMLElement
 );
 root.render(
   <React.StrictMode>
-    <App />
-  </React.StrictMode>
+    {/* 한국어 주석: 모든 화면에서 메타/제안 전역 상태를 공유하도록 AppProvider로 감싼다. */}
+    <AppProvider>
+      <App />
+    </AppProvider>
+  </React.StrictMode>,
 );
 
 // If you want to start measuring performance in your app, pass a function

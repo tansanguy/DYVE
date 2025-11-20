@@ -1,11 +1,15 @@
 import { Screen } from '../App';
 import { ArrowLeft, Music, Link as LinkIcon, Package } from 'lucide-react';
 import { ImageWithFallback } from './figma/ImageWithFallback';
+import type { Artist } from '../../types/Artist';
 
 interface ArtistDetailPageProps {
   navigate: (screen: Screen, data?: any) => void;
-  artist: any;
+  artist: Artist | null;
 }
+
+const ARTIST_IMAGE_FALLBACK =
+  'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=800&auto=format&fit=crop';
 
 export default function ArtistDetailPage({ navigate, artist }: ArtistDetailPageProps) {
   if (!artist) {
@@ -18,7 +22,8 @@ export default function ArtistDetailPage({ navigate, artist }: ArtistDetailPageP
 
   const sanitizedName =
     artist.name?.toLowerCase().replace(/\s+/g, '') || 'artist';
-  const portfolioUrl = artist.portfolioUrl || `https://soundcloud.com/${sanitizedName}`;
+  // 한국어 주석: API 스키마에 맞춰 portfolio_url 필드를 사용하도록 수정했다.
+  const portfolioUrl = artist.portfolio_url || `https://soundcloud.com/${sanitizedName}`;
 
   return (
     <div className="min-h-screen bg-black">
@@ -34,8 +39,9 @@ export default function ArtistDetailPage({ navigate, artist }: ArtistDetailPageP
       <div className="px-6 py-8">
         {/* Profile Image */}
         <div className="relative h-64 bg-black rounded-2xl overflow-hidden mb-6">
-          <ImageWithFallback 
-            src="https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=800"
+          {/* Cloudinary image_url을 직접 사용하고 값이 없으면 기본 이미지를 넣는다. */}
+          <ImageWithFallback
+            src={artist.image_url || ARTIST_IMAGE_FALLBACK}
             alt={artist.name}
             className="w-full h-full object-cover opacity-40"
           />
