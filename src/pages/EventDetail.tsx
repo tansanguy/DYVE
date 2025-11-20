@@ -1,13 +1,24 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Calendar, Clock, MapPin, Tag } from 'lucide-react';
+import { ArrowLeft, Calendar, Clock, MapPin, Tag, DollarSign } from 'lucide-react';
 import { EventDetail, getEventDetail } from '../api/events';
 import { ImageWithFallback } from '../dyve-figma/components/figma/ImageWithFallback';
 import { formatEventDateTime, formatEventPrice, getDDayLabel } from '../utils/event';
 import { toast } from 'sonner';
 
+const ENTRY_TYPE_LABELS: Record<string, string> = {
+  seat: '지정 좌석',
+  number: '입장 번호',
+  entry: '일반 입장',
+  standing: '스탠딩 입장',
+  firstcome: '선착순 입장',
+};
+
+const DETAIL_FALLBACK_IMAGE =
+  'https://images.unsplash.com/photo-1470229538611-16ba8c7ffbd7?w=900&auto=format&fit=crop&q=80';
+
 export default function EventDetailPage() {
-  const { id } = useParams();
+  const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [event, setEvent] = useState<EventDetail | null>(null);
   const [status, setStatus] = useState<'loading' | 'error' | 'idle'>('loading');
@@ -35,7 +46,9 @@ export default function EventDetailPage() {
 
   if (status === 'loading') {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-black text-white">공연 정보를 불러오는 중입니다...</div>
+      <div className="flex min-h-screen items-center justify-center bg-black text-white">
+        공연 정보를 불러오는 중입니다...
+      </div>
     );
   }
 
@@ -50,20 +63,13 @@ export default function EventDetailPage() {
     );
   }
 
-  const dDayLabel = getDDayLabel(event.date);
   const scheduleLabel = formatEventDateTime(event.date, event.time);
-  const entryTypeMap: Record<string, string> = {
-    seat: '지정 좌석',
-    number: '입장 번호',
-    entry: '일반 입장',
-    standing: '스탠딩 입장',
-    firstcome: '선착순 입장',
-  };
-  const entryTypeLabel = entryTypeMap[event.entry_type] ?? '입장 방식 미정';
+  const entryTypeLabel = ENTRY_TYPE_LABELS[event.entry_type] ?? '입장 방식 미정';
   const priceLabel = formatEventPrice(event.price_min ?? event.price, event.is_free, event.price_max ?? event.price);
+  const dDayLabel = getDDayLabel(event.date);
 
   const handleGoToBooking = () => {
-    if (!event?.allow_dyve_reservation) {
+    if (!event.allow_dyve_reservation) {
       toast.error('DYVE 예매가 불가능한 공연입니다.');
       return;
     }
@@ -72,63 +78,72 @@ export default function EventDetailPage() {
 
   return (
     <div className="min-h-screen bg-black text-white">
-      <header className="sticky top-0 z-50 border-b border-white/10 bg-black/90 px-4 py-4 backdrop-blur">
-        <div className="mx-auto flex w-full max-w-screen-sm items-center gap-4">
-          <button type="button" onClick={() => navigate(-1)} className="text-white">
+      <header className="bg-black sticky top-0 z-40 border-b border-white/10">
+        <div className="px-6 py-4 flex items-center gap-4">
+          <button onClick={() => navigate(-1)} className="text-white">
             <ArrowLeft size={24} />
           </button>
-          <h1 className="text-lg font-semibold">공연 상세</h1>
+          <h1 className="text-white text-xl font-extrabold">공연 상세</h1>
         </div>
       </header>
 
       <article className="mx-auto w-full max-w-screen-sm pb-16">
         <div className="relative h-80 w-full">
-          {event.image_url ? (
-            <ImageWithFallback src={event.image_url} alt={event.title} className="h-full w-full object-cover" />
-          ) : (
-            <div className="flex h-full items-center justify-center bg-white/5 text-white/70">이미지가 없습니다.</div>
-          )}
-          <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent" />
-          <div className="absolute left-4 top-4 flex gap-2">
+        <ImageWithFallback
+          src={event.image_url ?? DETAIL_FALLBACK_IMAGE}
+          alt={event.title}
+          className="h-full w-full object-cover opacity-80"
+        />
+          <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent" />
+          <div className="absolute top-6 left-6 flex flex-col gap-2">
             {event.allow_dyve_reservation && (
-              <span className="rounded-lg bg-[#FF3B5C] px-3 py-1.5 text-xs font-bold">DYVE 예약 가능</span>
+              <span className="inline-flex rounded-lg bg-[#FF3B5C] px-3 py-1.5 text-xs font-extrabold text-white shadow-lg shadow-[#FF3B5C]/30">
+                DYVE 예약 가능
+              </span>
             )}
-            <span className="rounded-lg bg-black/60 px-3 py-1.5 text-xs font-bold">{dDayLabel}</span>
+            <span className="inline-flex rounded-lg bg-white/10 px-3 py-1.5 text-xs font-extrabold text-white backdrop-blur-sm">
+              {dDayLabel}
+            </span>
           </div>
         </div>
 
         <div className="space-y-6 px-6 py-8">
           <div>
-            <p className="text-sm uppercase text-white/60">{event.genre}</p>
-            <h2 className="mt-2 text-3xl font-bold leading-tight">{event.title}</h2>
-            {event.description && <p className="mt-2 text-sm text-white/70 leading-relaxed">{event.description}</p>}
+            <h2 className="text-white text-3xl font-extrabold tracking-tight">{event.title}</h2>
+            <p className="text-gray-400 text-lg font-medium">{event.genre || '장르 미정'}</p>
           </div>
 
-          <div className="space-y-3 text-sm text-white/80">
-            <div className="flex items-center gap-3">
-              <MapPin className="text-[#FF3B5C]" size={18} />
+          <div className="space-y-3.5">
+            <div className="flex items-center gap-3 text-gray-300">
+              <MapPin size={18} className="text-[#FF3B5C]" />
               <span className="font-medium">{event.venue_name}</span>
             </div>
-            <div className="flex items-center gap-3">
-              <Calendar className="text-[#FF3B5C]" size={18} />
+            <div className="flex items-center gap-3 text-gray-300">
+              <Calendar size={18} className="text-[#FF3B5C]" />
               <span className="font-medium">{scheduleLabel}</span>
             </div>
-            <div className="flex items-center gap-3">
-              <Clock className="text-[#FF3B5C]" size={18} />
+            <div className="flex items-center gap-3 text-gray-300">
+              <Clock size={18} className="text-[#FF3B5C]" />
               <span className="font-medium">{entryTypeLabel}</span>
             </div>
-            <div className="flex items-center gap-3">
-              <Tag className="text-[#FF3B5C]" size={18} />
+            <div className="flex items-center gap-3 text-gray-300">
+              <Tag size={18} className="text-[#FF3B5C]" />
               <span className="font-medium">{event.region}</span>
+            </div>
+            <div className="flex items-center gap-3 text-white text-lg">
+              <DollarSign size={18} className="text-[#FF3B5C]" />
+              <span className="font-extrabold">{priceLabel}</span>
             </div>
           </div>
 
-          <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-            <p className="text-sm text-white/60">가격</p>
-            <p className="text-2xl font-bold text-white whitespace-nowrap">{priceLabel}</p>
+          <div className="space-y-3 rounded-2xl border border-white/5 bg-[#0F0F0F] p-6">
+            <h3 className="text-white font-extrabold">공연 정보</h3>
+            <p className="text-gray-500 text-sm leading-relaxed">
+              {event.description || '공연 소개가 준비 중입니다.'}
+            </p>
           </div>
 
-          <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+          <div className="space-y-3 rounded-2xl border border-white/5 bg-[#0F0F0F] p-6">
             <p className="text-sm text-white/60">주소</p>
             <p className="text-base font-semibold text-white">{event.address}</p>
           </div>
@@ -137,13 +152,13 @@ export default function EventDetailPage() {
             type="button"
             disabled={!event.allow_dyve_reservation}
             onClick={handleGoToBooking}
-            className={`w-full rounded-2xl py-4 text-lg font-bold transition ${
+            className={`w-full py-4 text-lg font-extrabold transition-all ${
               event.allow_dyve_reservation
-                ? 'bg-[#FF3B5C] text-white hover:bg-[#d43550]'
-                : 'bg-gray-800 text-gray-500 cursor-not-allowed'
+                ? 'rounded-2xl bg-[#FF3B5C] text-white hover:bg-[#d43550] shadow-lg shadow-[#FF3B5C]/30 hover:shadow-[#FF3B5C]/50'
+                : 'rounded-2xl bg-gray-800 text-gray-600 cursor-not-allowed'
             }`}
           >
-            {event.allow_dyve_reservation ? 'DYVE로 예매하기' : '외부 예매만 가능합니다'}
+            {event.allow_dyve_reservation ? 'DYVE로 예매하기' : '예매 불가 (외부 예매만 가능)'}
           </button>
 
           <Link

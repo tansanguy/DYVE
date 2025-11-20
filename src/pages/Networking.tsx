@@ -7,8 +7,17 @@ import { ProposalInboxButton } from '../components/navigation/ProposalInboxButto
 import { getArtists } from '../api/artists';
 import { getSpaces, SpaceProfile } from '../api/spaces';
 import type { Artist } from '../types/Artist';
-import { DEFAULT_CARD_PLACEHOLDER } from '../constants/media';
 import { CardSkeleton } from '../components/common/CardSkeleton';
+
+const FALLBACK_AVATAR =
+  'https://images.unsplash.com/photo-1464375117522-1311d6a5b81d?w=900&auto=format&fit=crop&q=80';
+
+const ALERT_ITEMS = [
+  '아티스트 → 공간 제안',
+  '공간 → 아티스트 제안',
+  '아티스트 ↔ 아티스트 협업',
+  '공간 ↔ 공간 협업',
+];
 
 export default function NetworkingPage() {
   const navigate = useNavigate();
@@ -24,7 +33,7 @@ export default function NetworkingPage() {
         setArtists(data);
         setArtistStatus('idle');
       } catch (error) {
-        console.error('아티스트 목록을 불러오지 못했습니다.', error);
+        console.error('아티스트 목록을 불러오는 중 오류 발생', error);
         setArtistStatus('error');
       }
     };
@@ -35,7 +44,7 @@ export default function NetworkingPage() {
         setSpaces(data);
         setSpaceStatus('idle');
       } catch (error) {
-        console.error('공간 목록을 불러오지 못했습니다.', error);
+        console.error('공간 목록을 불러오는 중 오류 발생', error);
         setSpaceStatus('error');
       }
     };
@@ -45,44 +54,45 @@ export default function NetworkingPage() {
   }, []);
 
   const StatusBlock = ({ message }: { message: string }) => (
-    <div className="rounded-2xl border border-[#333] bg-[#111] p-6 text-center text-sm text-gray-400">{message}</div>
+    <div className="rounded-2xl border border-white/5 bg-[#111] p-6 text-center text-sm text-gray-300">{message}</div>
   );
 
-  const goToArtistDetail = (id: number) => navigate(`/networking/${id}`);
-  const goToSpaceDetail = (id: number) => navigate(`/spaces/${id}`);
+  const goToArtistDetail = (artistId: number) => navigate(`/networking/${artistId}`);
+  const goToSpaceDetail = (spaceId: number) => navigate(`/spaces/${spaceId}`);
 
   return (
-    <div className="min-h-screen bg-black pb-24 text-white">
-      <div className="sticky top-0 z-40 border-b border-[#222] bg-black/95 backdrop-blur">
-        <div className="mx-auto flex w-full max-w-md items-center justify-between px-4 py-4">
-          <h1 className="text-lg font-semibold text-white">Networking</h1>
+    <div className="min-h-screen pb-24 bg-black text-white">
+      <div className="sticky top-0 z-40 border-b border-white/10 bg-black/95 backdrop-blur">
+        <div className="flex items-center justify-between px-6 py-4">
+          <h1 className="text-xl font-extrabold">Networking</h1>
           <ProposalInboxButton />
         </div>
       </div>
 
-      <div className="mx-auto w-full max-w-md space-y-6 px-4 py-6">
-        <div className="rounded-2xl border border-[#333] bg-[#111] p-5 shadow-[0_10px_30px_rgba(0,0,0,0.5)]">
-          <h3 className="text-base font-semibold text-white">제안 가능한 경우</h3>
+      <main className="space-y-6 px-6 py-6">
+        <div className="rounded-2xl border border-white/5 bg-[#1A1A1A] p-4">
+          <h3 className="text-white font-bold">제안 가능한 경우</h3>
           <ul className="mt-3 space-y-1 text-sm text-gray-400">
-            <li>• 아티스트 → 공간 제안</li>
-            <li>• 공간 → 아티스트 제안</li>
-            <li>• 아티스트 ↔ 아티스트 협업</li>
-            <li>• 공간 ↔ 공간 협업</li>
+            {ALERT_ITEMS.map((item) => (
+              <li key={item}>• {item}</li>
+            ))}
           </ul>
-          <p className="mt-4 text-sm font-semibold text-[#FF3B5C]">※ 아티스트 또는 공간 프로필이 있어야 제안할 수 있습니다</p>
+          <p className="mt-3 text-sm font-semibold text-[#FF3B5C]">
+            ※ 아티스트 또는 공간 프로필이 있어야 제안할 수 있습니다
+          </p>
         </div>
 
-        <Tabs defaultValue="artists" className="w-full">
-          <TabsList className="mb-5 flex gap-2 rounded-full bg-transparent">
+        <Tabs defaultValue="artists" className="space-y-4">
+          <TabsList className="flex w-full rounded-full border border-white/5 bg-[#111] p-1">
             <TabsTrigger
               value="artists"
-              className="flex-1 rounded-full border border-[#333] px-4 py-2 text-sm font-semibold text-gray-400 data-[state=active]:border-white data-[state=active]:bg-white data-[state=active]:text-black"
+              className="flex-1 rounded-full px-4 py-2 text-sm font-semibold text-white transition data-[state=active]:bg-[#FF3B5C] data-[state=active]:text-black"
             >
               아티스트 보기
             </TabsTrigger>
             <TabsTrigger
               value="spaces"
-              className="flex-1 rounded-full border border-[#333] px-4 py-2 text-sm font-semibold text-gray-400 data-[state=active]:border-white data-[state=active]:bg-white data-[state=active]:text-black"
+              className="flex-1 rounded-full px-4 py-2 text-sm font-semibold text-white transition data-[state=active]:bg-[#FF3B5C] data-[state=active]:text-black"
             >
               공간 보기
             </TabsTrigger>
@@ -105,18 +115,25 @@ export default function NetworkingPage() {
                   role="button"
                   tabIndex={0}
                   onClick={() => goToArtistDetail(artist.id)}
-                  onKeyDown={(e) => e.key === 'Enter' && goToArtistDetail(artist.id)}
-                  className="rounded-2xl border border-[#333] bg-[#111] p-4 shadow-[0_12px_30px_rgba(0,0,0,0.55)] transition hover:border-white/30 cursor-pointer"
+                  onKeyDown={(event) => event.key === 'Enter' && goToArtistDetail(artist.id)}
+                  className="rounded-2xl border border-white/10 bg-[#1A1A1A] p-4 transition hover:border-[#FF3B5C]"
                 >
                   <div className="flex gap-4">
-                    <div className="h-20 w-20 flex-shrink-0 overflow-hidden rounded-xl border border-[#333] bg-black">
-                      <ImageWithFallback src={artist.image_url || DEFAULT_CARD_PLACEHOLDER} alt={artist.name} className="h-full w-full object-cover" />
+                    <div className="h-20 w-20 flex-shrink-0 overflow-hidden rounded-xl border border-white/5 bg-black">
+                      <ImageWithFallback
+                        src={artist.image_url || FALLBACK_AVATAR}
+                        alt={artist.name}
+                        className="h-full w-full object-cover"
+                      />
                     </div>
                     <div className="flex flex-1 flex-col">
                       <h3 className="text-base font-semibold text-white">{artist.name}</h3>
-                      <p className="text-sm font-semibold text-[#FF3B5C]">{artist.genre || '장르 미정'}</p>
-                      <p className="text-xs text-gray-500">{artist.region || '활동 지역 미정'}</p>
-                      <p className="mt-2 line-clamp-2 text-sm text-gray-300">{artist.bio || '자기소개가 아직 없습니다.'}</p>
+                      <p className="text-[#FF3B5C] text-sm font-medium">
+                        {artist.genre || '장르 미정'}
+                      </p>
+                      <p className="mt-2 text-sm text-gray-400 line-clamp-2">
+                        {artist.bio || '자기소개가 아직 없습니다.'}
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -140,29 +157,35 @@ export default function NetworkingPage() {
                   role="button"
                   tabIndex={0}
                   onClick={() => goToSpaceDetail(space.id)}
-                  onKeyDown={(e) => e.key === 'Enter' && goToSpaceDetail(space.id)}
-                  className="rounded-2xl border border-[#333] bg-[#111] p-4 shadow-[0_12px_30px_rgba(0,0,0,0.55)] transition hover:border-white/30 cursor-pointer"
+                  onKeyDown={(event) => event.key === 'Enter' && goToSpaceDetail(space.id)}
+                  className="rounded-2xl border border-white/10 bg-[#1A1A1A] p-4 transition hover:border-[#FF3B5C]"
                 >
                   <div className="flex gap-4">
-                    <div className="h-20 w-20 flex-shrink-0 overflow-hidden rounded-xl border border-[#333] bg-black">
-                      <ImageWithFallback src={space.image_url || DEFAULT_CARD_PLACEHOLDER} alt={space.name} className="h-full w-full object-cover" />
+                    <div className="overflow-hidden rounded-xl border border-white/5 bg-black">
+                      <ImageWithFallback
+                        src={space.image_url || FALLBACK_AVATAR}
+                        alt={space.name}
+                        className="h-20 w-20 object-cover"
+                      />
                     </div>
                     <div className="flex flex-1 flex-col">
                       <h3 className="text-base font-semibold text-white">{space.name}</h3>
-                      <p className="text-sm font-semibold text-[#FF3B5C]">{space.type || space.category || '공간'}</p>
-                      <p className="text-xs text-gray-500">위치: {space.region || space.address || space.location || '미정'}</p>
-                      <p className="mt-2 line-clamp-2 text-sm text-gray-300">{space.description || '공간 소개가 아직 없습니다.'}</p>
+                      <p className="text-[#FF3B5C] text-sm font-medium">
+                        {space.type || space.category || '공간'}
+                      </p>
+                      <p className="mt-2 text-sm text-gray-400 line-clamp-2">
+                        {space.description || '공간 소개가 아직 없습니다.'}
+                      </p>
+                      <p className="text-xs text-gray-500 mt-2">
+                        수용 인원: {space.capacity ?? '미정'}명
+                      </p>
                     </div>
                   </div>
                 </div>
               ))}
           </TabsContent>
         </Tabs>
-
-        <div className="rounded-2xl border border-[#333] bg-[#111] p-5 text-center text-sm text-gray-400">
-          내 프로필 생성과 관리는 My Page에서 진행할 수 있습니다.
-        </div>
-      </div>
+      </main>
 
       <BottomNav />
     </div>
