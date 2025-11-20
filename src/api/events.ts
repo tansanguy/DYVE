@@ -18,19 +18,9 @@ export async function getEventDetail(eventId: number) {
   return response.data;
 }
 
-// 한국어 주석: 포스터 이미지를 함께 업로드해야 하므로 FormData 변환을 공통 함수로 분리한다.
-export async function createEvent(payload: CreateEventPayload, imageFile?: File | null) {
-  const formData = new FormData();
-  Object.entries(payload).forEach(([key, value]) => {
-    if (value === undefined || value === null || value === '') return;
-    formData.append(key, String(value));
-  });
-  if (imageFile) {
-    formData.append('image', imageFile);
-  }
-  const response = await apiClient.post<EventDetail>('/api/events/', formData, {
-    headers: { 'Content-Type': 'multipart/form-data' },
-  });
+// 한국어 주석: 백엔드 스펙에 맞춰 JSON 본문으로 공연을 생성한다.
+export async function createEvent(payload: CreateEventPayload) {
+  const response = await apiClient.post<EventDetail>('/api/events/', payload);
   return response.data;
 }
 

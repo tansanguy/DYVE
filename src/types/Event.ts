@@ -49,4 +49,8 @@ export interface CreateEventPayload {
   seat_rows?: number;
   seat_cols?: number;
   allow_dyve_reservation?: boolean;
+  image_url?: string;
+  advertise?: boolean;
+  space?: number;
+  artists?: number[];
 }

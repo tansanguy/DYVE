@@ -30,7 +30,7 @@ export default function ArtistProfileCreatePage() {
   const { genres } = useAppContext();
   const [formData, setFormData] = useState<ArtistProfileFormData>({
     name: '',
-    category: undefined,
+    category: '',
     genres: '',
     equipments: '',
     portfolio_url: '',
@@ -133,6 +133,20 @@ export default function ArtistProfileCreatePage() {
               placeholder="활동명을 입력하세요"
               className="rounded-xl border-white/5 bg-[#1A1A1A] text-white placeholder:text-gray-700"
               required
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="artist-category" className="mb-2 block text-white">
+              카테고리
+            </Label>
+            <Input
+              id="artist-category"
+              name="category"
+              value={formData.category || ''}
+              onChange={handleChange}
+              placeholder="밴드, 싱어송라이터 등"
+              className="rounded-xl border-white/5 bg-[#1A1A1A] text-white placeholder:text-gray-700"
             />
           </div>
 

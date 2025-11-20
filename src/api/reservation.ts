@@ -3,7 +3,7 @@ import { apiClient } from './client';
 export interface ReservationPayload {
   event: number;
   quantity: number;
-  seat?: string;
+  seat: string;
 }
 
 export interface ReservationResponse {

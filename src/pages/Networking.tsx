@@ -91,6 +91,16 @@ export default function NetworkingPage() {
     }
   };
 
+  const openArtistProposalFromDetail = () => {
+    if (!artistDetail) return;
+    openProposalDialog('artist', artistDetail.id, artistDetail.name);
+  };
+
+  const openSpaceProposalFromDetail = () => {
+    if (!spaceDetail) return;
+    openProposalDialog('space', spaceDetail.id, spaceDetail.name);
+  };
+
   const openProposalDialog = (type: 'artist' | 'space', id: number, name: string) => {
     setProposalTarget({ type, id, name });
     setProposalContent('');
@@ -176,7 +186,14 @@ export default function NetworkingPage() {
             {artistStatus === 'idle' && artists.length === 0 && <StatusBlock message="등록된 아티스트가 없습니다." />}
             {artistStatus === 'idle' &&
               artists.map((artist) => (
-                <div key={artist.id} className="rounded-2xl border border-[#333] bg-[#111] p-4 shadow-[0_12px_30px_rgba(0,0,0,0.55)]">
+                <div
+                  key={artist.id}
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => openArtistDetail(artist.id)}
+                  onKeyDown={(e) => e.key === 'Enter' && openArtistDetail(artist.id)}
+                  className="rounded-2xl border border-[#333] bg-[#111] p-4 shadow-[0_12px_30px_rgba(0,0,0,0.55)] transition hover:border-white/30 cursor-pointer"
+                >
                   <div className="flex gap-4">
                     <div className="h-20 w-20 flex-shrink-0 overflow-hidden rounded-xl border border-[#333] bg-black">
                       <ImageWithFallback src={artist.image_url || DEFAULT_CARD_PLACEHOLDER} alt={artist.name} className="h-full w-full object-cover" />
@@ -186,20 +203,6 @@ export default function NetworkingPage() {
                       <p className="text-sm font-semibold text-[#FF3B5C]">{artist.genre || '장르 미정'}</p>
                       <p className="text-xs text-gray-500">{artist.region || '활동 지역 미정'}</p>
                       <p className="mt-2 line-clamp-2 text-sm text-gray-300">{artist.bio || '자기소개가 아직 없습니다.'}</p>
-                      <div className="mt-3 flex gap-2">
-                        <Button type="button" size="sm" className="flex-1 rounded-xl bg-white text-black" onClick={() => openArtistDetail(artist.id)}>
-                          프로필 보기
-                        </Button>
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="secondary"
-                          className="flex-1 rounded-xl border border-[#444] bg-transparent text-white hover:bg-white/10"
-                          onClick={() => openProposalDialog('artist', artist.id, artist.name)}
-                        >
-                          제안하기
-                        </Button>
-                      </div>
                     </div>
                   </div>
                 </div>
@@ -218,7 +221,14 @@ export default function NetworkingPage() {
             {spaceStatus === 'idle' && spaces.length === 0 && <StatusBlock message="등록된 공간이 없습니다." />}
             {spaceStatus === 'idle' &&
               spaces.map((space) => (
-                <div key={space.id} className="rounded-2xl border border-[#333] bg-[#111] p-4 shadow-[0_12px_30px_rgba(0,0,0,0.55)]">
+                <div
+                  key={space.id}
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => openSpaceDetail(space.id)}
+                  onKeyDown={(e) => e.key === 'Enter' && openSpaceDetail(space.id)}
+                  className="rounded-2xl border border-[#333] bg-[#111] p-4 shadow-[0_12px_30px_rgba(0,0,0,0.55)] transition hover:border-white/30 cursor-pointer"
+                >
                   <div className="flex gap-4">
                     <div className="h-20 w-20 flex-shrink-0 overflow-hidden rounded-xl border border-[#333] bg-black">
                       <ImageWithFallback src={space.image_url || DEFAULT_CARD_PLACEHOLDER} alt={space.name} className="h-full w-full object-cover" />
@@ -226,22 +236,8 @@ export default function NetworkingPage() {
                     <div className="flex flex-1 flex-col">
                       <h3 className="text-base font-semibold text-white">{space.name}</h3>
                       <p className="text-sm font-semibold text-[#FF3B5C]">{space.type || space.category || '공간'}</p>
-                      <p className="text-xs text-gray-500">위치: {space.location || '미정'}</p>
+                      <p className="text-xs text-gray-500">위치: {space.region || space.address || space.location || '미정'}</p>
                       <p className="mt-2 line-clamp-2 text-sm text-gray-300">{space.description || '공간 소개가 아직 없습니다.'}</p>
-                      <div className="mt-3 flex gap-2">
-                        <Button type="button" size="sm" className="flex-1 rounded-xl bg-white text-black" onClick={() => openSpaceDetail(space.id)}>
-                          상세 보기
-                        </Button>
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="secondary"
-                          className="flex-1 rounded-xl border border-[#444] bg-transparent text-white hover:bg-white/10"
-                          onClick={() => openProposalDialog('space', space.id, space.name)}
-                        >
-                          제안하기
-                        </Button>
-                      </div>
                     </div>
                   </div>
                 </div>
@@ -275,11 +271,16 @@ export default function NetworkingPage() {
               <Skeleton className="h-4 w-1/2 rounded-full bg-white/10" />
             </div>
           ) : artistDetail ? (
-            <div className="space-y-3 text-sm text-gray-300">
-              <p className="text-lg font-bold text-white">{artistDetail.name}</p>
-              <p>장르: {artistDetail.genre || '-'}</p>
-              <p>지역: {artistDetail.region || '-'}</p>
-              <p>{artistDetail.bio || '소개가 없습니다.'}</p>
+            <div className="space-y-4 text-sm text-gray-300">
+              <div className="space-y-2">
+                <p className="text-lg font-bold text-white">{artistDetail.name}</p>
+                <p>장르: {artistDetail.genre || '-'}</p>
+                <p>지역: {artistDetail.region || '-'}</p>
+                <p>{artistDetail.bio || '소개가 없습니다.'}</p>
+              </div>
+              <Button type="button" className="w-full rounded-xl bg-white text-black" onClick={openArtistProposalFromDetail}>
+                제안하기
+              </Button>
             </div>
           ) : (
             <p className="text-sm text-gray-400">아티스트 정보를 찾을 수 없습니다.</p>
@@ -287,7 +288,7 @@ export default function NetworkingPage() {
         </DialogContent>
       </Dialog>
 
- 	    <Dialog
+      <Dialog
         open={spaceDetailOpen}
         onOpenChange={(open) => {
           setSpaceDetailOpen(open);
@@ -306,11 +307,16 @@ export default function NetworkingPage() {
               <Skeleton className="h-4 w-1/2 rounded-full bg-white/10" />
             </div>
           ) : spaceDetail ? (
-            <div className="space-y-3 text-sm text-gray-300">
-              <p className="text-lg font-bold text-white">{spaceDetail.name}</p>
-              <p>유형: {spaceDetail.category || spaceDetail.type || '-'}</p>
-              <p>위치: {spaceDetail.location || '-'}</p>
-              <p>{spaceDetail.description || '공간 설명이 없습니다.'}</p>
+            <div className="space-y-4 text-sm text-gray-300">
+              <div className="space-y-2">
+                <p className="text-lg font-bold text-white">{spaceDetail.name}</p>
+                <p>유형: {spaceDetail.category || spaceDetail.type || '-'}</p>
+                <p>위치: {spaceDetail.region || spaceDetail.address || spaceDetail.location || '-'}</p>
+                <p>{spaceDetail.description || '공간 설명이 없습니다.'}</p>
+              </div>
+              <Button type="button" className="w-full rounded-xl bg-white text-black" onClick={openSpaceProposalFromDetail}>
+                제안하기
+              </Button>
             </div>
           ) : (
             <p className="text-sm text-gray-400">공간 정보를 찾을 수 없습니다.</p>

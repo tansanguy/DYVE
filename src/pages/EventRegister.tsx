@@ -1,14 +1,12 @@
 import { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, Instagram, Upload, X } from 'lucide-react';
+import { ArrowLeft, Instagram } from 'lucide-react';
 import { toast } from 'sonner';
 import { Input } from '../dyve-figma/components/ui/input';
 import { Textarea } from '../dyve-figma/components/ui/textarea';
 import { Button } from '../dyve-figma/components/ui/button';
 import { Checkbox } from '../dyve-figma/components/ui/checkbox';
 import { Label } from '../dyve-figma/components/ui/label';
-import { Calendar } from '../dyve-figma/components/ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '../dyve-figma/components/ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../dyve-figma/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '../dyve-figma/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../dyve-figma/components/ui/tabs';
@@ -50,7 +48,7 @@ export default function EventRegisterPage() {
     title: '',
     description: '',
     genre: '',
-    date: undefined as Date | undefined,
+    date: '',
     time: '',
     venueName: '',
     venueAddress: '',
@@ -61,17 +59,20 @@ export default function EventRegisterPage() {
     totalSeats: '',
     seatRows: '',
     seatCols: '',
-    imageFile: null as File | null,
+    imageUrl: '',
     dyveBookable: true,
   });
   const [spaceForm, setSpaceForm] = useState({
     name: '',
     category: '',
-    location: '',
+    genres: '',
+    region: '',
+    address: '',
     capacity: '',
     description: '',
-    equipment: '',
-    imageFile: null as File | null,
+    equipments: '',
+    imageUrl: '',
+    phone: '',
   });
   const [instagramUrl, setInstagramUrl] = useState('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -87,36 +88,6 @@ export default function EventRegisterPage() {
     const nextTab: RegisterTab = value === 'space' ? 'space' : 'performance';
     setActiveTab(nextTab);
     setSearchParams(nextTab === 'performance' ? {} : { tab: nextTab });
-  };
-
-  const formatDateLabel = (date?: Date) => {
-    if (!date) return '날짜 선택';
-    const year = date.getFullYear();
-    const month = (date.getMonth() + 1).toString().padStart(2, '0');
-    const day = date.getDate().toString().padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  };
-
-  const handlePerformanceImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error('이미지 크기는 5MB 이하여야 합니다');
-      return;
-    }
-    setPerformanceForm((prev) => ({ ...prev, imageFile: file }));
-    toast.success('이미지가 선택되었습니다');
-  };
-
-  const handleSpaceImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error('이미지 크기는 5MB 이하여야 합니다');
-      return;
-    }
-    setSpaceForm((prev) => ({ ...prev, imageFile: file }));
-    toast.success('이미지가 선택되었습니다');
   };
 
   const handleInstagramImport = () => {
@@ -146,28 +117,30 @@ export default function EventRegisterPage() {
       return;
     }
 
+    const normalizedTime = performanceForm.time && performanceForm.time.length === 5 ? `${performanceForm.time}:00` : performanceForm.time;
+
     setSubmitting(true);
     try {
-      await createEvent(
-        {
-          title: performanceForm.title,
-          description: performanceForm.description,
-          genre: performanceForm.genre,
-          date: performanceForm.date.toISOString().split('T')[0],
-          time: performanceForm.time,
-          venue_name: performanceForm.venueName,
-          address: performanceForm.venueAddress,
-          region: performanceForm.region,
-          price: performanceForm.isFree ? 0 : Number(performanceForm.price || 0),
-          is_free: performanceForm.isFree,
-          entry_type: performanceForm.entryType,
-          total_seats: performanceForm.totalSeats ? Number(performanceForm.totalSeats) : undefined,
-          seat_rows: performanceForm.seatRows ? Number(performanceForm.seatRows) : undefined,
-          seat_cols: performanceForm.seatCols ? Number(performanceForm.seatCols) : undefined,
-          allow_dyve_reservation: performanceForm.dyveBookable,
-        },
-        performanceForm.imageFile,
-      );
+      await createEvent({
+        title: performanceForm.title,
+        description: performanceForm.description || undefined,
+        genre: performanceForm.genre,
+        date: performanceForm.date,
+        time: normalizedTime,
+        venue_name: performanceForm.venueName,
+        address: performanceForm.venueAddress || undefined,
+        region: performanceForm.region,
+        price: performanceForm.isFree ? 0 : Number(performanceForm.price || 0),
+        is_free: performanceForm.isFree,
+        entry_type: performanceForm.entryType,
+        total_seats: performanceForm.totalSeats ? Number(performanceForm.totalSeats) : undefined,
+        seat_rows: performanceForm.seatRows ? Number(performanceForm.seatRows) : undefined,
+        seat_cols: performanceForm.seatCols ? Number(performanceForm.seatCols) : undefined,
+        allow_dyve_reservation: performanceForm.dyveBookable,
+        advertise: false,
+        image_url: performanceForm.imageUrl || undefined,
+        artists: [],
+      });
       toast.success('공연이 등록되었습니다!');
       setTimeout(() => navigate('/events'), 1200);
     } catch (error) {
@@ -180,23 +153,24 @@ export default function EventRegisterPage() {
 
   const handleSpaceSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (!spaceForm.name || !spaceForm.location || !spaceForm.capacity) {
+    if (!spaceForm.name || !spaceForm.region || !spaceForm.address || !spaceForm.capacity) {
       toast.error('필수 항목을 모두 입력해주세요');
       return;
     }
     setSpaceSubmitting(true);
     try {
-      await createSpace(
-        {
-          name: spaceForm.name,
-          category: spaceForm.category || undefined,
-          location: spaceForm.location,
-          capacity: Number(spaceForm.capacity),
-          description: spaceForm.description,
-          equipment: spaceForm.equipment,
-        },
-        spaceForm.imageFile,
-      );
+      await createSpace({
+        name: spaceForm.name,
+        category: spaceForm.category || undefined,
+        genres: spaceForm.genres || undefined,
+        region: spaceForm.region,
+        address: spaceForm.address,
+        capacity: Number(spaceForm.capacity),
+        description: spaceForm.description || undefined,
+        equipments: spaceForm.equipments || undefined,
+        image_url: spaceForm.imageUrl || undefined,
+        phone: spaceForm.phone || undefined,
+      });
       toast.success('공간 등록이 완료되었습니다!');
       setTimeout(() => navigate('/events'), 1200);
     } catch (error) {
@@ -335,21 +309,13 @@ export default function EventRegisterPage() {
                   <Label className="mb-2 block text-white">
                     공연 날짜 <span className="text-[#FF3B5C]">*</span>
                   </Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <button type="button" className="w-full rounded-xl border border-white/5 bg-[#1A1A1A] px-4 py-3 text-left text-white">
-                        {formatDateLabel(performanceForm.date)}
-                      </button>
-                    </PopoverTrigger>
-                    <PopoverContent className="border-white/10 bg-[#1A1A1A] p-2" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={performanceForm.date}
-                        onSelect={(date) => setPerformanceForm({ ...performanceForm, date: date ?? performanceForm.date })}
-                        initialFocus
-                      />
-                    </PopoverContent>
-                  </Popover>
+                  <Input
+                    type="date"
+                    value={performanceForm.date}
+                    onChange={(e) => setPerformanceForm({ ...performanceForm, date: e.target.value })}
+                    className="rounded-xl border border-white/5 bg-[#1A1A1A] text-white"
+                    placeholder="YYYY-MM-DD"
+                  />
                 </div>
                 <div>
                   <Label className="mb-2 block text-white">
@@ -468,21 +434,14 @@ export default function EventRegisterPage() {
               )}
 
               <div>
-                <Label className="mb-2 block text-white">공연 이미지</Label>
-                {performanceForm.imageFile ? (
-                  <div className="relative inline-block">
-                    <img src={URL.createObjectURL(performanceForm.imageFile)} alt="업로드 이미지" className="h-40 w-40 rounded-2xl border border-white/10 object-cover" />
-                    <button type="button" onClick={() => setPerformanceForm({ ...performanceForm, imageFile: null })} className="absolute -right-2 -top-2 rounded-full bg-black/80 p-1 text-white">
-                      <X size={14} />
-                    </button>
-                  </div>
-                ) : (
-                  <label className="flex cursor-pointer flex-col items-center gap-2 rounded-2xl border-2 border-dashed border-white/10 bg-[#1A1A1A] p-8 text-center hover:border-[#FF3B5C] transition">
-                    <Upload size={32} className="text-gray-600" />
-                    <p className="text-sm text-gray-600">클릭하여 이미지 업로드</p>
-                    <input type="file" accept="image/*" className="hidden" onChange={handlePerformanceImageUpload} />
-                  </label>
-                )}
+                <Label className="mb-2 block text-white">공연 이미지 URL</Label>
+                <Input
+                  value={performanceForm.imageUrl}
+                  onChange={(e) => setPerformanceForm({ ...performanceForm, imageUrl: e.target.value })}
+                  placeholder="https://example.com/poster.jpg"
+                  className="rounded-xl border-white/5 bg-[#1A1A1A] text-white placeholder:text-gray-700"
+                />
+                <p className="mt-2 text-xs text-gray-500">이미지 주소를 입력하면 포스터가 함께 등록됩니다.</p>
               </div>
 
               <label className="flex items-center gap-2 text-sm text-gray-400">
@@ -512,18 +471,6 @@ export default function EventRegisterPage() {
               </div>
 
               <div>
-                <Label htmlFor="space-location" className="mb-2 block text-white">
-                  위치 <span className="text-[#FF3B5C]">*</span>
-                </Label>
-                <Input
-                  id="space-location"
-                  value={spaceForm.location}
-                  onChange={(e) => setSpaceForm({ ...spaceForm, location: e.target.value })}
-                  placeholder="주소를 입력하세요"
-                  className="rounded-xl border-white/5 bg-[#1A1A1A] text-white placeholder:text-gray-700"
-                />
-              </div>
-              <div>
                 <Label className="mb-2 block text-white">카테고리</Label>
                 <Select value={spaceForm.category} onValueChange={(value) => setSpaceForm({ ...spaceForm, category: value })}>
                   <SelectTrigger className="rounded-xl border-white/5 bg-[#1A1A1A] text-white">
@@ -537,6 +484,51 @@ export default function EventRegisterPage() {
                     ))}
                   </SelectContent>
                 </Select>
+              </div>
+
+              <div>
+                <Label htmlFor="space-genres" className="mb-2 block text-white">
+                  장르
+                </Label>
+                <Input
+                  id="space-genres"
+                  value={spaceForm.genres}
+                  onChange={(e) => setSpaceForm({ ...spaceForm, genres: e.target.value })}
+                  placeholder="예: 재즈, 락"
+                  className="rounded-xl border-white/5 bg-[#1A1A1A] text-white placeholder:text-gray-700"
+                />
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <Label className="mb-2 block text-white">
+                    지역 <span className="text-[#FF3B5C]">*</span>
+                  </Label>
+                  <Select value={spaceForm.region} onValueChange={(value) => setSpaceForm({ ...spaceForm, region: value })}>
+                    <SelectTrigger className="rounded-xl border-white/5 bg-[#1A1A1A] text-white">
+                      <SelectValue placeholder="지역 선택" />
+                    </SelectTrigger>
+                    <SelectContent className="border border-white/5 bg-[#0F0F0F] text-white">
+                      {regionOptions.map((region) => (
+                        <SelectItem key={region} value={region}>
+                          {region}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="space-address" className="mb-2 block text-white">
+                    주소 <span className="text-[#FF3B5C]">*</span>
+                  </Label>
+                  <Input
+                    id="space-address"
+                    value={spaceForm.address}
+                    onChange={(e) => setSpaceForm({ ...spaceForm, address: e.target.value })}
+                    placeholder="주소를 입력하세요"
+                    className="rounded-xl border-white/5 bg-[#1A1A1A] text-white placeholder:text-gray-700"
+                  />
+                </div>
               </div>
 
               <div>
@@ -574,8 +566,8 @@ export default function EventRegisterPage() {
                 </Label>
                 <Textarea
                   id="space-equipment"
-                  value={spaceForm.equipment}
-                  onChange={(e) => setSpaceForm({ ...spaceForm, equipment: e.target.value })}
+                  value={spaceForm.equipments}
+                  onChange={(e) => setSpaceForm({ ...spaceForm, equipments: e.target.value })}
                   placeholder="제공 가능한 장비를 입력하세요"
                   className="rounded-2xl border-white/5 bg-[#1A1A1A] text-white placeholder:text-gray-700"
                   rows={3}
@@ -583,15 +575,26 @@ export default function EventRegisterPage() {
               </div>
 
               <div>
-                <Label className="mb-2 block text-white">공간 이미지</Label>
-                <label className="flex cursor-pointer flex-col items-center gap-2 rounded-2xl border-2 border-dashed border-white/10 bg-[#1A1A1A] p-8 text-center hover:border-[#FF3B5C] transition">
-                  <Upload size={32} className="text-gray-600" />
-                  <p className="text-sm text-gray-600">클릭하여 이미지 업로드</p>
-                  <input type="file" accept="image/*" className="hidden" onChange={handleSpaceImageUpload} />
-                </label>
-                {spaceForm.imageFile && (
-                  <p className="mt-2 text-sm text-gray-400">{spaceForm.imageFile.name}</p>
-                )}
+                <Label className="mb-2 block text-white">공간 이미지 URL</Label>
+                <Input
+                  value={spaceForm.imageUrl}
+                  onChange={(e) => setSpaceForm({ ...spaceForm, imageUrl: e.target.value })}
+                  placeholder="https://example.com/space.jpg"
+                  className="rounded-xl border-white/5 bg-[#1A1A1A] text-white placeholder:text-gray-700"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="space-phone" className="mb-2 block text-white">
+                  연락처
+                </Label>
+                <Input
+                  id="space-phone"
+                  value={spaceForm.phone}
+                  onChange={(e) => setSpaceForm({ ...spaceForm, phone: e.target.value })}
+                  placeholder="010-0000-0000"
+                  className="rounded-xl border-white/5 bg-[#1A1A1A] text-white placeholder:text-gray-700"
+                />
               </div>
 
               <Button type="submit" disabled={spaceSubmitting} className="w-full rounded-2xl bg-[#FF2E2E] py-4 text-lg font-bold text-white transition hover:bg-[#cc2525]">

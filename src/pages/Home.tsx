@@ -79,15 +79,17 @@ export default function Home() {
       title: firstBanner.title,
       description: firstBanner.description,
       imageUrl: firstBanner.image_url,
-      ctaLabel: firstBanner.link_url ? '바로가기' : '자세히 보기',
+      ctaLabel: firstBanner.link_url ? '바로가기' : '공연 찾아보기',
       onAction: () => {
         if (firstBanner.link_url) {
           if (firstBanner.link_url.startsWith('http')) {
             window.open(firstBanner.link_url, '_blank');
-          } else {
-            navigate(firstBanner.link_url);
+            return;
           }
+          navigate(firstBanner.link_url);
+          return;
         }
+        navigate('/events');
       },
     };
   }, [banners, navigate]);
@@ -134,7 +136,11 @@ export default function Home() {
               <h1 className="text-3xl font-bold leading-snug tracking-tight">당신 근처의 공연을 발견하세요</h1>
               <p className="text-sm text-white/60">현재 {currentRegion} 인근에서 진행되는 공연을 엄선했어요.</p>
             </div>
-            <HeroBanner {...(heroData ?? {})} />
+            <HeroBanner
+              {...(heroData ?? {})}
+              onAction={heroData?.onAction ?? (() => navigate('/events'))}
+              ctaLabel={heroData?.ctaLabel ?? '공연 찾아보기'}
+            />
           </section>
 
           <section className="space-y-4">
