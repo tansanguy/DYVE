@@ -20,7 +20,7 @@ type SpaceFormState = {
   address: string;
   description: string;
   capacity: string;
-  equipment: string;
+  equipments: string;
   contact: string;
   image_url: string;
 };
@@ -35,7 +35,7 @@ export default function SpaceProfileCreate() {
     address: '',
     description: '',
     capacity: '',
-    equipment: '',
+    equipments: '',
     contact: '',
     image_url: '',
   });
@@ -67,7 +67,7 @@ export default function SpaceProfileCreate() {
         address: formState.address.trim(),
         description: formState.description.trim() || undefined,
         capacity: Number.isFinite(capacityNumber) && capacityNumber > 0 ? capacityNumber : undefined,
-        equipment: formState.equipment.trim() || undefined,
+        equipments: formState.equipments.trim() || undefined,
         contact: formState.contact.trim() || undefined,
         image_url: formState.image_url.trim() || undefined,
       });
@@ -178,8 +178,8 @@ export default function SpaceProfileCreate() {
             <Label className="mb-2 block text-white">대표 장비</Label>
             <Textarea
               rows={2}
-              name="equipment"
-              value={formState.equipment}
+              name="equipments"
+              value={formState.equipments}
               onChange={handleChange}
               placeholder="주요 장비를 나열해 주세요"
               className="bg-[#111] text-white"

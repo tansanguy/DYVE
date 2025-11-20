@@ -11,8 +11,7 @@ export interface SpaceProfile {
   address?: string | null;
   capacity?: number | null;
   description?: string | null;
-  equipment?: string | null;
-  equipments?: string | null;
+  equipments?: string | string[] | null;
   contact?: string | null;
   phone?: string | null;
   image_url?: string | null;
@@ -28,11 +27,12 @@ export interface SpaceProfilePayload {
   name: string;
   category?: string;
   genres?: string;
-  region?: string;
-  address?: string;
-  capacity?: number;
+  region: string;
+  address: string;
   description?: string;
-  equipments?: string;
+  capacity?: number;
+  equipments?: string | string[];
+  contact?: string;
   image_url?: string;
   phone?: string;
 }
