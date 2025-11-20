@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { User, Ticket, DollarSign, Settings, Code, Calendar } from 'lucide-react';
 import kakaoLoginBtn from '../assets/images/kakao_login_large_wide.png';
@@ -10,11 +10,13 @@ import { Label } from '../dyve-figma/components/ui/label';
 import { Button } from '../dyve-figma/components/ui/button';
 import { BottomNav } from '../components/navigation/BottomNav';
 import { ProposalInboxButton } from '../components/navigation/ProposalInboxButton';
+import { useAuth } from '../contexts/AuthContext';
 
 type UserType = 'user' | 'artist' | 'venue' | null;
 
 export default function MyPage() {
   const navigate = useNavigate();
+  const { user, isAuthenticated, logout: logoutFromContext } = useAuth();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userType, setUserType] = useState<UserType>(null);
   const [showNotificationDialog, setShowNotificationDialog] = useState(false);
@@ -44,11 +46,23 @@ export default function MyPage() {
     { id: 2, title: 'Acoustic Session', date: '2025-11-28', venue: 'Café Muse', attendees: 30 },
   ];
 
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      setIsLoggedIn(true);
+      setUserInfo((prev) => ({
+        ...prev,
+        name: user.first_name || user.username || prev.name,
+        email: user.email || prev.email,
+      }));
+    }
+  }, [isAuthenticated, user]);
+
   const handleKakaoLogin = () => {
     setIsLoggedIn(true);
   };
 
   const handleLogout = () => {
+    logoutFromContext();
     setIsLoggedIn(false);
     setUserType(null);
   };
@@ -95,15 +109,15 @@ export default function MyPage() {
             </>
           ) : (
             <div className="flex items-center gap-4 mb-4">
-              <div className="w-16 h-16 bg-[#FF2E2E] rounded-full flex items-center justify-center">
-                <User size={32} className="text-white" />
-              </div>
-              <div>
-                <h3 className="text-white text-xl font-bold">사용자 이름</h3>
-                <p className="text-gray-500 text-sm">user@email.com</p>
-              </div>
+            <div className="w-16 h-16 bg-[#FF2E2E] rounded-full flex items-center justify-center">
+              <User size={32} className="text-white" />
             </div>
-          )}
+            <div>
+              <h3 className="text-white text-xl font-bold">{userInfo.name || '사용자 이름'}</h3>
+              <p className="text-gray-500 text-sm">{userInfo.email || 'user@email.com'}</p>
+            </div>
+          </div>
+        )}
         </div>
 
         {isLoggedIn && (

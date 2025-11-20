@@ -1,12 +1,29 @@
+import { useNavigate } from 'react-router-dom';
 import { Screen } from '../App';
 import dyveLogo from '../../assets/images/dyve-logo.png';
 import kakaoLoginBtn from '../../assets/images/kakao_login_large_wide.png';
+import { fakeLogin } from '../../api/auth';
+import { useAuth } from '../../contexts/AuthContext';
 
 interface LoginPageProps {
   navigate: (screen: Screen) => void;
 }
 
 export default function LoginPage({ navigate }: LoginPageProps) {
+  const routerNavigate = useNavigate();
+  const { login } = useAuth();
+
+  const handleFakeLogin = async () => {
+    try {
+      const data = await fakeLogin();
+      login({ user: data.user, csrfToken: data.csrf_token ?? null });
+      routerNavigate('/mypage');
+    } catch (error) {
+      console.error('[DYVE] 개발용 로그인 실패', error);
+      alert('로그인 실패');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-black flex flex-col items-center justify-center px-6">
       <div className="w-full max-w-md flex flex-col items-center">
@@ -26,6 +43,13 @@ export default function LoginPage({ navigate }: LoginPageProps) {
               alt="카카오 로그인" 
               className="w-full rounded-xl"
             />
+          </button>
+          
+          <button 
+            onClick={handleFakeLogin}
+            className="w-full bg-white text-black py-3 rounded-xl hover:bg-gray-100 transition font-bold shadow border border-white/10 flex items-center justify-center"
+          >
+            개발용 로그인
           </button>
           
           <button 
