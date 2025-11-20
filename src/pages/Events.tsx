@@ -96,7 +96,7 @@ export default function EventsPage() {
             <div className="flex items-center gap-3">
               <button
                 type="button"
-                onClick={() => navigate('/events/register')}
+                onClick={() => navigate('/events/create')}
                 className="flex items-center gap-2 rounded-xl bg-[#FF3B5C] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#d43550]"
               >
                 <Plus size={18} />

@@ -96,8 +96,8 @@ export default function MyPage() {
     setUserType(null);
   };
 
-  const goToArtistRegister = () => navigate('/mypage/artist-profile');
-  const goToSpaceRegister = () => navigate('/events/register?tab=space');
+  const goToArtistRegister = () => navigate('/artist/create');
+  const goToSpaceRegister = () => navigate('/spaces/create');
 
   return (
     <div className="min-h-screen pb-20 bg-black">

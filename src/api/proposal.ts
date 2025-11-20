@@ -29,7 +29,7 @@ export async function proposalsReceivedList() {
 
 // 한국어 주석: 아티스트/공간 각각에 맞춰 한쪽 ID만 채워보내도록 payload를 강제한다.
 export async function proposalsCreate(payload: ProposalCreatePayload) {
-  const response = await apiClient.post<Proposal>('/api/proposals/', payload);
+  const response = await apiClient.post<Proposal>('/api/proposals/send/', payload);
   return response.data;
 }
 

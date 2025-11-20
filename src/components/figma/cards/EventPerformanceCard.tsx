@@ -22,12 +22,7 @@ const fallbackEvent: EventCardData = {
 
 export function EventPerformanceCard({ event, onClick }: EventPerformanceCardProps) {
   const data = { ...fallbackEvent, ...event };
-  // 한국어 주석: 이벤트 카드와 동일한 가격 계산 규칙을 공유해 텍스트 baseline이 어긋나지 않게 한다.
-  const priceLabel = formatEventPrice(
-    data.priceMin ?? data.price,
-    data.isFree,
-    data.priceMax ?? data.price,
-  );
+  const priceLabel = formatEventPrice(data.priceMin ?? data.price, data.isFree, data.priceMax ?? data.price);
   const dDayLabel = getDDayLabel(data.date);
   const scheduleLabel = formatEventDateTime(data.date, data.time);
   const coverImage = data.imageUrl || DEFAULT_CARD_PLACEHOLDER;
@@ -36,15 +31,15 @@ export function EventPerformanceCard({ event, onClick }: EventPerformanceCardPro
     <button
       type="button"
       onClick={onClick}
-      className="w-full rounded-2xl border border-white/5 bg-[#0F0F0F] p-4 text-left transition hover:border-[#FF3B5C] hover:shadow-lg hover:shadow-[#FF3B5C]/10"
+      className="relative w-full rounded-2xl border border-white/5 bg-[#0F0F0F] p-4 text-left transition hover:border-[#FF3B5C] hover:shadow-lg hover:shadow-[#FF3B5C]/10"
     >
+      <span className="absolute right-3 top-3 rounded-full bg-[#FF3B5C] px-3 py-1 text-[11px] font-bold uppercase tracking-widest text-white">
+        {dDayLabel}
+      </span>
       <div className="flex gap-4">
         <div className="relative h-20 w-20 flex-shrink-0 overflow-hidden rounded-xl bg-black">
           <ImageWithFallback src={coverImage} alt={data.title} className="h-full w-full object-cover opacity-70" />
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-          <span className="absolute right-1.5 top-1.5 rounded-md bg-[#FF3B5C] px-2 py-0.5 text-xs font-bold text-white">
-            {dDayLabel}
-          </span>
         </div>
 
         <div className="flex flex-1 flex-col justify-between gap-1">
@@ -63,11 +58,10 @@ export function EventPerformanceCard({ event, onClick }: EventPerformanceCardPro
             </div>
           </div>
         </div>
-
-        <div className="flex flex-col items-end justify-between text-right">
-          <span className="text-xs font-bold text-[#FF3B5C]">{data.genre}</span>
-          <span className="text-sm font-bold text-white whitespace-nowrap tabular-nums leading-none">{priceLabel}</span>
-        </div>
+      </div>
+      <div className="mt-4 flex items-center justify-between text-sm text-white">
+        <span className="font-bold text-white">{priceLabel}</span>
+        <span className="text-xs font-semibold text-[#FF3B5C]">{data.genre}</span>
       </div>
     </button>
   );

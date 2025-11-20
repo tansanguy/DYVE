@@ -48,7 +48,7 @@ export default function NetworkingPage() {
     <div className="rounded-2xl border border-[#333] bg-[#111] p-6 text-center text-sm text-gray-400">{message}</div>
   );
 
-  const goToArtistDetail = (id: number) => navigate(`/artists/${id}`);
+  const goToArtistDetail = (id: number) => navigate(`/networking/${id}`);
   const goToSpaceDetail = (id: number) => navigate(`/spaces/${id}`);
 
   return (

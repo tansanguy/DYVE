@@ -5,12 +5,14 @@ import EventDetailPage from './pages/EventDetail';
 import BookingPage from './pages/Booking';
 import NetworkingPage from './pages/Networking';
 import MyPage from './pages/MyPage';
-import EventRegisterPage from './pages/EventRegister';
+import EventCreatePage from './pages/EventCreatePage';
 import InboxPage from './pages/Inbox';
 import FigmaApp from './dyve-figma/App';
-import ArtistProfileCreatePage from './pages/ArtistProfileCreatePage';
-import ArtistDetailPage from './pages/ArtistDetail';
+import ArtistProfileCreate from './pages/ArtistProfileCreate';
 import SpaceDetailPage from './pages/SpaceDetail';
+import SpaceProfileCreate from './pages/SpaceProfileCreate';
+import ProposalSend from './pages/ProposalSend';
+import NetworkingDetailPage from './pages/NetworkingDetail';
 
 export default function App() {
   return (
@@ -19,12 +21,13 @@ export default function App() {
         <Route path="/" element={<Home />} />
         <Route path="/events" element={<EventsPage />} />
         <Route path="/events/:id" element={<EventDetailPage />} />
-        <Route path="/events/register" element={<EventRegisterPage />} />
-        <Route path="/artist/create" element={<EventRegisterPage />} />
-        <Route path="/mypage/artist-profile" element={<ArtistProfileCreatePage />} />
+        <Route path="/events/create" element={<EventCreatePage />} />
+        <Route path="/artist/create" element={<ArtistProfileCreate />} />
+        <Route path="/spaces/create" element={<SpaceProfileCreate />} />
+        <Route path="/proposals/send" element={<ProposalSend />} />
         <Route path="/booking/:id" element={<BookingPage />} />
         <Route path="/networking" element={<NetworkingPage />} />
-        <Route path="/artists/:id" element={<ArtistDetailPage />} />
+        <Route path="/networking/:artistId" element={<NetworkingDetailPage />} />
         <Route path="/spaces/:id" element={<SpaceDetailPage />} />
         <Route path="/mypage" element={<MyPage />} />
         <Route path="/inbox" element={<InboxPage />} />
