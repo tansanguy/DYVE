@@ -1,36 +1,21 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../dyve-figma/components/ui/tabs';
 import { ImageWithFallback } from '../dyve-figma/components/figma/ImageWithFallback';
 import { BottomNav } from '../components/navigation/BottomNav';
 import { ProposalInboxButton } from '../components/navigation/ProposalInboxButton';
-import { getArtists, getArtistDetail } from '../api/artists';
-import { getSpaces, getSpaceDetail, SpaceProfile } from '../api/spaces';
+import { getArtists } from '../api/artists';
+import { getSpaces, SpaceProfile } from '../api/spaces';
 import type { Artist } from '../types/Artist';
-import { proposalsCreate } from '../api/proposal';
-import { toast } from 'sonner';
-import { Textarea } from '../dyve-figma/components/ui/textarea';
-import { Button } from '../dyve-figma/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../dyve-figma/components/ui/dialog';
-import { useAppContext } from '../contexts/AppContext';
-import { Skeleton } from '../dyve-figma/components/ui/skeleton';
 import { DEFAULT_CARD_PLACEHOLDER } from '../constants/media';
 import { CardSkeleton } from '../components/common/CardSkeleton';
 
 export default function NetworkingPage() {
+  const navigate = useNavigate();
   const [artists, setArtists] = useState<Artist[]>([]);
   const [spaces, setSpaces] = useState<SpaceProfile[]>([]);
   const [artistStatus, setArtistStatus] = useState<'loading' | 'error' | 'idle'>('loading');
   const [spaceStatus, setSpaceStatus] = useState<'loading' | 'error' | 'idle'>('loading');
-  const [artistDetail, setArtistDetail] = useState<Artist | null>(null);
-  const [spaceDetail, setSpaceDetail] = useState<SpaceProfile | null>(null);
-  const [artistDetailOpen, setArtistDetailOpen] = useState(false);
-  const [spaceDetailOpen, setSpaceDetailOpen] = useState(false);
-  const [artistDetailLoading, setArtistDetailLoading] = useState(false);
-  const [spaceDetailLoading, setSpaceDetailLoading] = useState(false);
-  const [proposalTarget, setProposalTarget] = useState<{ type: 'artist' | 'space'; id: number; name: string } | null>(null);
-  const [proposalContent, setProposalContent] = useState('');
-  const [sendingProposal, setSendingProposal] = useState(false);
-  const { refreshProposalCount } = useAppContext();
 
   useEffect(() => {
     const fetchArtists = async () => {
@@ -63,79 +48,8 @@ export default function NetworkingPage() {
     <div className="rounded-2xl border border-[#333] bg-[#111] p-6 text-center text-sm text-gray-400">{message}</div>
   );
 
-  const openArtistDetail = async (id: number) => {
-    setArtistDetailLoading(true);
-    try {
-      const detail = await getArtistDetail(id);
-      setArtistDetail(detail);
-      setArtistDetailOpen(true);
-    } catch (error) {
-      console.error('아티스트 상세를 불러오지 못했습니다.', error);
-      toast.error('아티스트 정보를 불러오지 못했습니다.');
-    } finally {
-      setArtistDetailLoading(false);
-    }
-  };
-
-  const openSpaceDetail = async (id: number) => {
-    setSpaceDetailLoading(true);
-    try {
-      const detail = await getSpaceDetail(id);
-      setSpaceDetail(detail);
-      setSpaceDetailOpen(true);
-    } catch (error) {
-      console.error('공간 상세를 불러오지 못했습니다.', error);
-      toast.error('공간 정보를 불러오지 못했습니다.');
-    } finally {
-      setSpaceDetailLoading(false);
-    }
-  };
-
-  const openArtistProposalFromDetail = () => {
-    if (!artistDetail) return;
-    openProposalDialog('artist', artistDetail.id, artistDetail.name);
-  };
-
-  const openSpaceProposalFromDetail = () => {
-    if (!spaceDetail) return;
-    openProposalDialog('space', spaceDetail.id, spaceDetail.name);
-  };
-
-  const openProposalDialog = (type: 'artist' | 'space', id: number, name: string) => {
-    setProposalTarget({ type, id, name });
-    setProposalContent('');
-  };
-
-  const closeProposalDialog = () => {
-    setProposalTarget(null);
-    setProposalContent('');
-    setSendingProposal(false);
-  };
-
-  const handleSendProposal = async () => {
-    if (!proposalTarget) return;
-    if (!proposalContent.trim()) {
-      toast.error('제안 내용을 입력해주세요.');
-      return;
-    }
-
-    setSendingProposal(true);
-    try {
-      await proposalsCreate({
-        receiver_artist: proposalTarget.type === 'artist' ? proposalTarget.id : null,
-        receiver_space: proposalTarget.type === 'space' ? proposalTarget.id : null,
-        content: proposalContent.trim(),
-      });
-      toast.success('제안서가 전송되었습니다');
-      closeProposalDialog();
-      refreshProposalCount();
-    } catch (error) {
-      console.error('제안 전송 실패', error);
-      toast.error('제안서를 전송하지 못했습니다. 다시 시도해주세요.');
-    } finally {
-      setSendingProposal(false);
-    }
-  };
+  const goToArtistDetail = (id: number) => navigate(`/artists/${id}`);
+  const goToSpaceDetail = (id: number) => navigate(`/spaces/${id}`);
 
   return (
     <div className="min-h-screen bg-black pb-24 text-white">
@@ -190,8 +104,8 @@ export default function NetworkingPage() {
                   key={artist.id}
                   role="button"
                   tabIndex={0}
-                  onClick={() => openArtistDetail(artist.id)}
-                  onKeyDown={(e) => e.key === 'Enter' && openArtistDetail(artist.id)}
+                  onClick={() => goToArtistDetail(artist.id)}
+                  onKeyDown={(e) => e.key === 'Enter' && goToArtistDetail(artist.id)}
                   className="rounded-2xl border border-[#333] bg-[#111] p-4 shadow-[0_12px_30px_rgba(0,0,0,0.55)] transition hover:border-white/30 cursor-pointer"
                 >
                   <div className="flex gap-4">
@@ -225,8 +139,8 @@ export default function NetworkingPage() {
                   key={space.id}
                   role="button"
                   tabIndex={0}
-                  onClick={() => openSpaceDetail(space.id)}
-                  onKeyDown={(e) => e.key === 'Enter' && openSpaceDetail(space.id)}
+                  onClick={() => goToSpaceDetail(space.id)}
+                  onKeyDown={(e) => e.key === 'Enter' && goToSpaceDetail(space.id)}
                   className="rounded-2xl border border-[#333] bg-[#111] p-4 shadow-[0_12px_30px_rgba(0,0,0,0.55)] transition hover:border-white/30 cursor-pointer"
                 >
                   <div className="flex gap-4">
@@ -251,108 +165,6 @@ export default function NetworkingPage() {
       </div>
 
       <BottomNav />
-
-      <Dialog
-        open={artistDetailOpen}
-        onOpenChange={(open) => {
-          setArtistDetailOpen(open);
-          if (!open) {
-            setArtistDetail(null);
-          }
-        }}
-      >
-        <DialogContent className="border border-[#333] bg-[#111]">
-          <DialogHeader>
-            <DialogTitle className="text-white">아티스트 상세</DialogTitle>
-          </DialogHeader>
-          {artistDetailLoading ? (
-            <div className="space-y-3">
-              <Skeleton className="h-40 w-full rounded-2xl bg-white/10" />
-              <Skeleton className="h-4 w-1/2 rounded-full bg-white/10" />
-            </div>
-          ) : artistDetail ? (
-            <div className="space-y-4 text-sm text-gray-300">
-              <div className="space-y-2">
-                <p className="text-lg font-bold text-white">{artistDetail.name}</p>
-                <p>장르: {artistDetail.genre || '-'}</p>
-                <p>지역: {artistDetail.region || '-'}</p>
-                <p>{artistDetail.bio || '소개가 없습니다.'}</p>
-              </div>
-              <Button type="button" className="w-full rounded-xl bg-white text-black" onClick={openArtistProposalFromDetail}>
-                제안하기
-              </Button>
-            </div>
-          ) : (
-            <p className="text-sm text-gray-400">아티스트 정보를 찾을 수 없습니다.</p>
-          )}
-        </DialogContent>
-      </Dialog>
-
-      <Dialog
-        open={spaceDetailOpen}
-        onOpenChange={(open) => {
-          setSpaceDetailOpen(open);
-          if (!open) {
-            setSpaceDetail(null);
-          }
-        }}
-      >
-        <DialogContent className="border border-[#333] bg-[#111]">
-          <DialogHeader>
-            <DialogTitle className="text-white">공간 상세</DialogTitle>
-          </DialogHeader>
-          {spaceDetailLoading ? (
-            <div className="space-y-3">
-              <Skeleton className="h-40 w-full rounded-2xl bg-white/10" />
-              <Skeleton className="h-4 w-1/2 rounded-full bg-white/10" />
-            </div>
-          ) : spaceDetail ? (
-            <div className="space-y-4 text-sm text-gray-300">
-              <div className="space-y-2">
-                <p className="text-lg font-bold text-white">{spaceDetail.name}</p>
-                <p>유형: {spaceDetail.category || spaceDetail.type || '-'}</p>
-                <p>위치: {spaceDetail.region || spaceDetail.address || spaceDetail.location || '-'}</p>
-                <p>{spaceDetail.description || '공간 설명이 없습니다.'}</p>
-              </div>
-              <Button type="button" className="w-full rounded-xl bg-white text-black" onClick={openSpaceProposalFromDetail}>
-                제안하기
-              </Button>
-            </div>
-          ) : (
-            <p className="text-sm text-gray-400">공간 정보를 찾을 수 없습니다.</p>
-          )}
-        </DialogContent>
-      </Dialog>
-
-      <Dialog
-        open={Boolean(proposalTarget)}
-        onOpenChange={(open) => {
-          if (!open) {
-            closeProposalDialog();
-          }
-        }}
-      >
-        <DialogContent className="border border-[#333] bg-[#111]">
-          <DialogHeader>
-            <DialogTitle className="text-white">{proposalTarget ? `${proposalTarget.name}에게 제안 보내기` : '제안'}</DialogTitle>
-          </DialogHeader>
-          <Textarea
-            placeholder="제안 내용을 입력하세요"
-            value={proposalContent}
-            onChange={(e) => setProposalContent(e.target.value)}
-            className="rounded-2xl border border-[#333] bg-black text-white placeholder:text-gray-600"
-            rows={5}
-          />
-          <div className="flex gap-3 pt-4">
-            <Button type="button" className="flex-1" onClick={handleSendProposal} disabled={sendingProposal}>
-              {sendingProposal ? '전송 중...' : '제안 보내기'}
-            </Button>
-            <Button type="button" variant="secondary" className="flex-1 border border-[#444] bg-transparent text-white hover:bg-white/10" onClick={closeProposalDialog}>
-              취소
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

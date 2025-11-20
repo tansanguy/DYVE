@@ -11,13 +11,13 @@ import { Button } from '../dyve-figma/components/ui/button';
 import { BottomNav } from '../components/navigation/BottomNav';
 import { ProposalInboxButton } from '../components/navigation/ProposalInboxButton';
 import { useAuth } from '../contexts/AuthContext';
+import apiClient from '../api/client';
 
 type UserType = 'user' | 'artist' | 'venue' | null;
 
 export default function MyPage() {
   const navigate = useNavigate();
-  const { user, isAuthenticated, logout: logoutFromContext } = useAuth();
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const { user, isAuthenticated, logout: logoutFromContext, setUser } = useAuth();
   const [userType, setUserType] = useState<UserType>(null);
   const [showNotificationDialog, setShowNotificationDialog] = useState(false);
   const [showPrivacyDialog, setShowPrivacyDialog] = useState(false);
@@ -48,7 +48,6 @@ export default function MyPage() {
 
   useEffect(() => {
     if (isAuthenticated && user) {
-      setIsLoggedIn(true);
       setUserInfo((prev) => ({
         ...prev,
         name: user.first_name || user.username || prev.name,
@@ -58,24 +57,25 @@ export default function MyPage() {
   }, [isAuthenticated, user]);
 
   const handleKakaoLogin = () => {
-    setIsLoggedIn(true);
+    alert('카카오 로그인은 준비 중입니다.');
+  };
+
+  const handleDevLogin = async (nextType?: Exclude<UserType, null>) => {
+    try {
+      const res = await apiClient.post("/api/auth/fake-login/");
+      setUser(res.data.user);
+      localStorage.setItem("user", JSON.stringify(res.data.user));
+      alert("개발용 로그인 완료!");
+      if (nextType) setUserType(nextType);
+    } catch (err) {
+      console.error(err);
+      alert("로그인 실패");
+    }
   };
 
   const handleLogout = () => {
     logoutFromContext();
-    setIsLoggedIn(false);
     setUserType(null);
-  };
-
-  const handleDevLogin = (type: Exclude<UserType, null>) => {
-    setIsLoggedIn(true);
-    setUserType(type);
-    const messages = {
-      user: '일반 사용자로 로그인되었습니다',
-      artist: '아티스트로 로그인되었습니다',
-      venue: '공간 보유자로 로그인되었습니다',
-    };
-    toast.success(messages[type]);
   };
 
   const goToArtistRegister = () => navigate('/mypage/artist-profile');
@@ -92,7 +92,7 @@ export default function MyPage() {
 
       <div className="px-6 py-8">
         <div className="bg-[#1A1A1A] rounded-2xl p-6 border border-white/5 mb-6">
-          {!isLoggedIn ? (
+          {!user ? (
             <>
               <div className="flex items-center gap-4 mb-4">
                 <div className="w-16 h-16 bg-gray-800 rounded-full flex items-center justify-center">
@@ -120,7 +120,7 @@ export default function MyPage() {
         )}
         </div>
 
-        {isLoggedIn && (
+        {user && (
           <div className="bg-[#1A1A1A] rounded-2xl p-6 border border-white/5 mb-6">
             <div className="flex items-center justify-between mb-3">
               <h4 className="text-white font-bold">활동 유형</h4>
@@ -153,7 +153,7 @@ export default function MyPage() {
           </div>
         )}
 
-        {isLoggedIn && (
+        {user && (
           <div className="bg-[#1A1A1A] rounded-2xl p-6 border border-white/5 mb-6">
             <div className="flex items-center gap-2 mb-4">
               <Ticket size={20} className="text-[#FF2E2E]" />
@@ -173,7 +173,7 @@ export default function MyPage() {
           </div>
         )}
 
-        {isLoggedIn && (userType === 'artist' || userType === 'venue') && (
+        {user && (userType === 'artist' || userType === 'venue') && (
           <div className="bg-[#1A1A1A] rounded-2xl p-6 border border-white/5 mb-6">
             <div className="flex items-center gap-2 mb-4">
               <Calendar size={20} className="text-[#FF2E2E]" />
@@ -194,7 +194,7 @@ export default function MyPage() {
           </div>
         )}
 
-        {isLoggedIn && (
+        {user && (
           <div className="bg-[#1A1A1A] rounded-2xl p-6 border border-white/5 mb-6">
             <div className="flex items-center gap-2 mb-4">
               <DollarSign size={20} className="text-[#FF2E2E]" />
@@ -226,7 +226,7 @@ export default function MyPage() {
             <button type="button" onClick={() => setShowTermsDialog(true)} className="w-full text-left hover:text-white transition font-medium">
               약관 및 정책
             </button>
-            {isLoggedIn && (
+            {user && (
               <button type="button" onClick={handleLogout} className="w-full text-left text-[#FF2E2E] hover:text-red-400 transition font-medium">
                 로그아웃
               </button>
