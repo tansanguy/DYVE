@@ -12,6 +12,7 @@ import { BottomNav } from '../components/navigation/BottomNav';
 import { ProposalInboxButton } from '../components/navigation/ProposalInboxButton';
 import { useAuth } from '../contexts/AuthContext';
 import apiClient from '../api/client';
+import { FakeLoginResponse } from '../types/auth';
 
 type UserType = 'user' | 'artist' | 'venue' | null;
 
@@ -63,8 +64,9 @@ export default function MyPage() {
   const handleDevLogin = async (nextType?: Exclude<UserType, null>) => {
     try {
       const res = await apiClient.post("/api/auth/fake-login/");
-      setUser(res.data.user);
-      localStorage.setItem("user", JSON.stringify(res.data.user));
+      const data = res.data as FakeLoginResponse;
+      setUser(data.user);
+      localStorage.setItem("user", JSON.stringify(data.user));
       alert("개발용 로그인 완료!");
       if (nextType) setUserType(nextType);
     } catch (err) {

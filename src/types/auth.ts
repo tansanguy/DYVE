@@ -9,5 +9,5 @@ export interface AuthUser {
 export interface FakeLoginResponse {
   message: string;
   user: AuthUser;
-  csrf_token?: string;
+  csrf_token: string;
 }
