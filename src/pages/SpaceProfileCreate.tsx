@@ -6,7 +6,9 @@ import { Textarea } from '../dyve-figma/components/ui/textarea';
 import { Label } from '../dyve-figma/components/ui/label';
 import { Button } from '../dyve-figma/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../dyve-figma/components/ui/select';
+import { toast } from 'sonner';
 import { createSpaceProfile } from '../api/spaces';
+import { uploadImage } from '../api/uploads';
 import { useAppContext } from '../contexts/AppContext';
 import { BottomNav } from '../components/navigation/BottomNav';
 
@@ -21,8 +23,9 @@ type SpaceFormState = {
   description: string;
   capacity: string;
   equipments: string;
-  contact: string;
   image_url: string;
+  genres: string;
+  phone: string;
 };
 
 export default function SpaceProfileCreate() {
@@ -36,46 +39,85 @@ export default function SpaceProfileCreate() {
     description: '',
     capacity: '',
     equipments: '',
-    contact: '',
+    genres: '',
+    phone: '',
     image_url: '',
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [imageUploadStatus, setImageUploadStatus] = useState<'idle' | 'uploading' | 'success' | 'error'>('idle');
 
   const categoryOptions = useMemo(() => (spaceCategories.length ? spaceCategories : FALLBACK_SPACE_CATEGORIES), [spaceCategories]);
   const regionOptions = useMemo(() => (regions.length ? regions : FALLBACK_REGIONS), [regions]);
-  const isFormInvalid = !formState.name.trim() || !formState.region || !formState.address.trim();
+  const isFormInvalid =
+    !formState.name.trim() ||
+    !formState.category ||
+    !formState.region ||
+    !formState.address.trim();
+  const isImageReady = Boolean(formState.image_url) && imageUploadStatus === 'success';
 
   const handleChange = (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = event.target;
     setFormState((prev) => ({ ...prev, [name]: value }));
   };
 
+  const handleImageChange = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) {
+      return;
+    }
+
+    setImageUploadStatus('uploading');
+    try {
+      const url = await uploadImage(file);
+      setFormState((prev) => ({ ...prev, image_url: url }));
+      toast.success('공간 대표 이미지 업로드를 완료했습니다.');
+      setImageUploadStatus('success');
+    } catch (error) {
+      console.error('공간 이미지 업로드 실패', error);
+      toast.error('이미지 업로드에 실패했습니다. 다른 파일로 다시 시도해 주세요.');
+      setImageUploadStatus('error');
+    } finally {
+      if (event.target) {
+        event.target.value = '';
+      }
+    }
+  };
+
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (isFormInvalid) {
-      alert('필수 항목을 모두 입력해 주세요.');
+    if (isFormInvalid || !isImageReady) {
+      toast.error('필수 항목이나 대표 이미지가 누락되었습니다.');
       return;
     }
 
     setIsSubmitting(true);
     try {
+      const hasValidCategory = categoryOptions.includes(formState.category);
+      const hasValidRegion = regionOptions.includes(formState.region);
+      if (!hasValidCategory || !hasValidRegion) {
+        toast.error('카테고리 혹은 활동 지역 선택이 올바르지 않습니다.');
+        setIsSubmitting(false);
+        return;
+      }
+
       const capacityNumber = Number(formState.capacity);
       await createSpaceProfile({
         name: formState.name.trim(),
-        category: formState.category || undefined,
+        category: formState.category,
         region: formState.region,
+        genres: formState.genres.trim() || undefined,
         address: formState.address.trim(),
         description: formState.description.trim() || undefined,
         capacity: Number.isFinite(capacityNumber) && capacityNumber > 0 ? capacityNumber : undefined,
         equipments: formState.equipments.trim() || undefined,
-        contact: formState.contact.trim() || undefined,
-        image_url: formState.image_url.trim() || undefined,
+        phone: formState.phone.trim() || undefined,
+        image_url: formState.image_url,
       });
-      alert('공간 프로필이 등록되었습니다.');
+      toast.success('공간 프로필이 등록되었습니다.');
       navigate('/networking');
     } catch (error) {
       console.error('공간 프로필 등록 실패', error);
-      alert('공간 등록을 완료하지 못했습니다. 다시 시도해 주세요.');
+      toast.error('공간 등록을 완료하지 못했습니다. 다시 시도해 주세요.');
     } finally {
       setIsSubmitting(false);
     }
@@ -96,7 +138,9 @@ export default function SpaceProfileCreate() {
       <div className="mx-auto max-w-screen-sm px-6 py-8">
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>
-            <Label className="mb-2 block text-white">공간명 <span className="text-[#FF3B5C]">*</span></Label>
+            <Label className="mb-2 block text-white">
+              공간명 <span className="text-[#FF3B5C]">*</span>
+            </Label>
             <Input
               name="name"
               value={formState.name}
@@ -187,10 +231,21 @@ export default function SpaceProfileCreate() {
           </div>
 
           <div>
-            <Label className="mb-2 block text-white">연락처</Label>
+            <Label className="mb-2 block text-white">장르</Label>
             <Input
-              name="contact"
-              value={formState.contact}
+              name="genres"
+              value={formState.genres}
+              onChange={handleChange}
+              placeholder="Rock, Jazz 등"
+              className="bg-[#111] text-white"
+            />
+          </div>
+
+          <div>
+            <Label className="mb-2 block text-white">전화번호</Label>
+            <Input
+              name="phone"
+              value={formState.phone}
               onChange={handleChange}
               placeholder="010-0000-0000"
               className="bg-[#111] text-white"
@@ -198,17 +253,31 @@ export default function SpaceProfileCreate() {
           </div>
 
           <div>
-            <Label className="mb-2 block text-white">대표 이미지 URL</Label>
-            <Input
-              name="image_url"
-              value={formState.image_url}
-              onChange={handleChange}
-              placeholder="https://"
-              className="bg-[#111] text-white"
+            <Label className="mb-2 block text-white">
+              대표 이미지 업로드 <span className="text-xs text-gray-400">필수</span>
+            </Label>
+            <input
+              type="file"
+              accept="image/*"
+              onChange={handleImageChange}
+              className="w-full rounded-2xl border border-white/10 bg-[#111] px-4 py-3 text-sm text-gray-200"
             />
+            {imageUploadStatus === 'uploading' && (
+              <p className="text-xs text-blue-300 mt-1">이미지를 업로드하는 중입니다...</p>
+            )}
+            {imageUploadStatus === 'error' && (
+              <p className="text-xs text-[#FF2E2E] mt-1">이미지 업로드에 실패했습니다. 다시 시도해 주세요.</p>
+            )}
+            {imageUploadStatus === 'success' && (
+              <p className="text-xs text-[#7AF5C6] mt-1">이미지 업로드가 완료되었습니다.</p>
+            )}
           </div>
 
-          <Button type="submit" disabled={isSubmitting || isFormInvalid} className="w-full bg-[#FF3B5C] py-4 font-bold">
+          <Button
+            type="submit"
+            disabled={isSubmitting || isFormInvalid || !isImageReady}
+            className="w-full bg-[#FF3B5C] py-4 font-bold"
+          >
             {isSubmitting ? '저장 중...' : '공간 등록하기'}
           </Button>
         </form>

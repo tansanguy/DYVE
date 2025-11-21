@@ -2,6 +2,11 @@ export interface Artist {
   id: number;
   name: string;
   genre?: string | null;
+  category?: string | null;
+  genres?: string | null;
+  equipments?: string | null;
+  history?: string | null;
+  phone?: string | null;
   bio?: string | null;
   region?: string | null;
   instagram?: string | null;

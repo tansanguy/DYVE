@@ -3,22 +3,56 @@ import { ArrowLeft, Send } from 'lucide-react';
 import { useState } from 'react';
 import { Textarea } from './ui/textarea';
 import { toast } from 'sonner';
+import { createProposal } from '../../api/proposal';
 
 interface ProposalPageProps {
   navigate: (screen: Screen) => void;
-  target: any;
+  target:
+    | {
+        artistId?: number;
+        artist_id?: number;
+        spaceId?: number;
+        space_id?: number;
+        id?: number;
+        name?: string;
+      }
+    | null;
 }
 
 export default function ProposalPage({ navigate, target }: ProposalPageProps) {
   const [proposal, setProposal] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (proposal.length < 10) {
       toast.error('제안 내용을 최소 10자 이상 입력해주세요');
       return;
     }
-    toast.success('제안이 전송되었습니다!');
-    setTimeout(() => navigate('suggest'), 1500);
+
+    const receiverArtistId = target?.artistId ?? target?.artist_id ?? target?.id;
+    const receiverSpaceId = target?.spaceId ?? target?.space_id;
+
+    if (!receiverArtistId && !receiverSpaceId) {
+      toast.error('제안 대상 정보를 찾을 수 없습니다.');
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      await createProposal({
+        receiver_artist: receiverSpaceId ? null : receiverArtistId ?? null,
+        receiver_space: receiverSpaceId ?? null,
+        content: proposal,
+      });
+      toast.success('제안이 전송되었습니다!');
+      setTimeout(() => navigate('suggest'), 1500);
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : '제안서를 전송하는 동안 오류가 발생했습니다.';
+      toast.error(errorMessage);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -68,9 +102,10 @@ export default function ProposalPage({ navigate, target }: ProposalPageProps) {
         </div>
 
         {/* Submit Button */}
-        <button 
+        <button
           onClick={handleSubmit}
-          className="w-full bg-[#FF2E2E] text-white py-4 rounded-2xl hover:bg-[#cc2525] transition flex items-center justify-center gap-2 font-bold text-lg"
+          disabled={isSubmitting}
+          className="w-full bg-[#FF2E2E] text-white py-4 rounded-2xl hover:bg-[#cc2525] transition flex items-center justify-center gap-2 font-bold text-lg disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <Send size={20} />
           <span>제안 보내기</span>

@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import { getEventDetail, EventDetail } from '../api/events';
-import { createReservation, ReservationResponse } from '../api/reservation';
+import { createReservation } from '../api/reservation';
 import { formatEventDateTime, formatEventPrice, getDDayLabel } from '../utils/event';
 import { ImageWithFallback } from '../dyve-figma/components/figma/ImageWithFallback';
 
@@ -19,7 +19,6 @@ export default function BookingPage() {
   const [selectedSeats, setSelectedSeats] = useState<string[]>([]);
   const [quantity, setQuantity] = useState(1);
   const [submitting, setSubmitting] = useState(false);
-  const [reservationResult, setReservationResult] = useState<ReservationResponse | null>(null);
 
   useEffect(() => {
     if (!eventId) {
@@ -102,33 +101,19 @@ export default function BookingPage() {
             ? selectedSeats.join(', ')
             : '미지정';
 
-      const reservation = await createReservation({
+      await createReservation({
         event: event.id,
         quantity: payloadQuantity,
         seat: seatLabel,
       });
 
-      setReservationResult(reservation);
+      navigate('/booking/complete');
     } catch (error) {
       console.error('예매 생성 실패', error);
       alert('예매를 완료하지 못했습니다. 다시 시도해 주세요.');
     } finally {
       setSubmitting(false);
     }
-  };
-
-  const resetToEvents = () => {
-    setReservationResult(null);
-    navigate('/events');
-  };
-
-  const goToTicket = () => {
-    if (!event) {
-      navigate('/');
-      return;
-    }
-    setReservationResult(null);
-    navigate(`/events/${event.id}`);
   };
 
   if (status === 'loading') {
@@ -335,34 +320,6 @@ export default function BookingPage() {
         </section>
       </div>
 
-      {reservationResult && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 px-6">
-          <div className="w-full max-w-md rounded-3xl border border-white/10 bg-[#0F0F0F] p-6 text-center">
-            <CheckCircle2 className="mx-auto mb-4 h-12 w-12 text-emerald-400" />
-            <h3 className="text-2xl font-bold text-white">예매 완료!</h3>
-            <p className="mt-2 text-sm text-white/70">예약 코드 <span className="font-mono text-white">{reservationResult.reservation_code}</span> 를 현장에서 제시해 주세요.</p>
-            <div className="mt-4 rounded-2xl border border-white/10 bg-black/40 p-4 text-left text-sm text-white/80 space-y-2">
-              <p><span className="text-white/50">입장 유형</span> <span className="float-right font-semibold text-white">{reservationResult.entry_type}</span></p>
-              <p><span className="text-white/50">수량</span> <span className="float-right font-semibold text-white">{reservationResult.quantity}명</span></p>
-              <p><span className="text-white/50">좌석/번호</span> <span className="float-right font-semibold text-white">{reservationResult.seat}</span></p>
-            </div>
-            {reservationResult.qr_code && (
-              <div className="mt-4 flex flex-col items-center">
-                <p className="text-xs text-white/60">QR 코드</p>
-                <img src={reservationResult.qr_code} alt="예약 QR" className="mt-2 h-36 w-36 rounded-2xl border border-white/10 bg-white" />
-              </div>
-            )}
-            <div className="mt-6 grid gap-3 sm:grid-cols-2">
-              <button type="button" onClick={goToTicket} className="rounded-2xl border border-white/20 px-4 py-3 text-sm font-semibold text-white">
-                공연 상세 보기
-              </button>
-              <button type="button" onClick={resetToEvents} className="rounded-2xl bg-[#FF3B5C] px-4 py-3 text-sm font-semibold text-white">
-                다른 공연 둘러보기
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
+  </div>
+);
 }

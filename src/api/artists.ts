@@ -8,12 +8,16 @@ export interface ArtistListParams {
 
 export interface ArtistProfilePayload {
   name: string;
-  genre?: string;
+  category?: string;
+  genres?: string;
   region?: string;
+  equipments?: string;
+  history?: string;
   bio?: string;
   instagram?: string;
   portfolio_url?: string;
   image_url?: string;
+  phone?: string;
 }
 
 export async function getArtists(params?: ArtistListParams) {

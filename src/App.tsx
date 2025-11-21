@@ -7,6 +7,7 @@ import NetworkingPage from './pages/Networking';
 import MyPage from './pages/MyPage';
 import EventCreatePage from './pages/EventCreatePage';
 import InboxPage from './pages/Inbox';
+import ReservationCompletePage from './pages/ReservationComplete';
 import FigmaApp from './dyve-figma/App';
 import ArtistProfileCreate from './pages/ArtistProfileCreate';
 import SpaceDetailPage from './pages/SpaceDetail';
@@ -26,6 +27,7 @@ export default function App() {
         <Route path="/spaces/create" element={<SpaceProfileCreate />} />
         <Route path="/proposals/send" element={<ProposalSend />} />
         <Route path="/booking/:id" element={<BookingPage />} />
+        <Route path="/booking/complete" element={<ReservationCompletePage />} />
         <Route path="/networking" element={<NetworkingPage />} />
         <Route path="/networking/:artistId" element={<NetworkingDetailPage />} />
         <Route path="/spaces/:id" element={<SpaceDetailPage />} />

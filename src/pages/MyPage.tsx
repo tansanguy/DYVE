@@ -4,7 +4,6 @@ import { User, Ticket, DollarSign, Settings, Code, Calendar } from 'lucide-react
 import kakaoLoginBtn from '../assets/images/kakao_login_large_wide.png';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../dyve-figma/components/ui/dialog';
-import { Switch } from '../dyve-figma/components/ui/switch';
 import { Input } from '../dyve-figma/components/ui/input';
 import { Label } from '../dyve-figma/components/ui/label';
 import { Button } from '../dyve-figma/components/ui/button';
@@ -25,12 +24,6 @@ export default function MyPage() {
   const [showTermsDialog, setShowTermsDialog] = useState(false);
   const [showSettlementDialog, setShowSettlementDialog] = useState(false);
   const [showProfileDialog, setShowProfileDialog] = useState(false);
-  const [notifications, setNotifications] = useState({
-    performanceUpdates: true,
-    suggestions: true,
-    bookingConfirm: true,
-    marketing: false,
-  });
   const [userInfo, setUserInfo] = useState({
     name: '김다이브',
     email: 'user@example.com',
@@ -38,8 +31,8 @@ export default function MyPage() {
   });
 
   const mockBookings = [
-    { id: 1, title: 'Midnight Jazz Session', date: '2025-11-05', status: '예매완료' },
-    { id: 2, title: 'Indie Rock Night', date: '2025-11-04', status: '예매완료' },
+    { id: 1, eventId: 101, title: 'Midnight Jazz Session', date: '2025-11-05', status: '예매완료' },
+    { id: 2, eventId: 102, title: 'Indie Rock Night', date: '2025-11-04', status: '예매완료' },
   ];
 
   const mockPerformances = [
@@ -98,6 +91,7 @@ export default function MyPage() {
 
   const goToArtistRegister = () => navigate('/artist/create');
   const goToSpaceRegister = () => navigate('/spaces/create');
+  const handleBookingClick = (eventId: number) => navigate(`/events/${eventId}`);
 
   return (
     <div className="min-h-screen pb-20 bg-black">
@@ -179,13 +173,18 @@ export default function MyPage() {
             </div>
             <div className="space-y-3">
               {mockBookings.map((booking) => (
-                <div key={booking.id} className="bg-black rounded-xl p-4 border border-white/5">
+                <button
+                  key={booking.id}
+                  type="button"
+                  onClick={() => handleBookingClick(booking.eventId)}
+                  className="w-full rounded-xl border border-white/5 bg-black p-4 text-left transition hover:border-[#FF2E2E]"
+                >
                   <h5 className="text-white mb-1 font-medium">{booking.title}</h5>
                   <div className="flex justify-between items-center">
                     <p className="text-gray-500 text-sm">{booking.date}</p>
                     <span className="text-[#FF2E2E] text-sm font-semibold">{booking.status}</span>
                   </div>
-                </div>
+                </button>
               ))}
             </div>
           </div>
@@ -283,51 +282,17 @@ export default function MyPage() {
           <DialogHeader>
             <DialogTitle className="text-white">알림 설정</DialogTitle>
           </DialogHeader>
-          <div className="py-4 space-y-5">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-white font-medium mb-1">공연 업데이트</p>
-                <p className="text-gray-500 text-xs">예매한 공연의 변경사항을 알려드립니다</p>
-              </div>
-              <Switch
-                checked={notifications.performanceUpdates}
-                onCheckedChange={(checked) => setNotifications({ ...notifications, performanceUpdates: checked })}
-                className="data-[state=checked]:bg-[#FF2E2E]"
-              />
-            </div>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-white font-medium mb-1">제안 알림</p>
-                <p className="text-gray-500 text-xs">새로운 제안을 받으면 알려드립니다</p>
-              </div>
-              <Switch
-                checked={notifications.suggestions}
-                onCheckedChange={(checked) => setNotifications({ ...notifications, suggestions: checked })}
-                className="data-[state=checked]:bg-[#FF2E2E]"
-              />
-            </div>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-white font-medium mb-1">예매 확정</p>
-                <p className="text-gray-500 text-xs">예매 확정 시 알려드립니다</p>
-              </div>
-              <Switch
-                checked={notifications.bookingConfirm}
-                onCheckedChange={(checked) => setNotifications({ ...notifications, bookingConfirm: checked })}
-                className="data-[state=checked]:bg-[#FF2E2E]"
-              />
-            </div>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-white font-medium mb-1">마케팅 알림</p>
-                <p className="text-gray-500 text-xs">이벤트 및 프로모션 정보를 받습니다</p>
-              </div>
-              <Switch
-                checked={notifications.marketing}
-                onCheckedChange={(checked) => setNotifications({ ...notifications, marketing: checked })}
-                className="data-[state=checked]:bg-[#FF2E2E]"
-              />
-            </div>
+          <div className="py-4 space-y-4">
+            <p className="text-gray-400 text-sm">
+              알림 설정 기능은 추후 업데이트 예정입니다. 준비되는 대로 알려드릴게요.
+            </p>
+            <Button
+              type="button"
+              onClick={() => setShowNotificationDialog(false)}
+              className="w-full bg-[#FF3B5C] text-white hover:bg-[#cc2525] font-bold"
+            >
+              확인
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
@@ -408,21 +373,16 @@ export default function MyPage() {
             <DialogTitle className="text-white">정산 내역</DialogTitle>
           </DialogHeader>
           <div className="py-4 space-y-4">
-            <div className="bg-black rounded-xl p-4 border border-white/5">
-              <div className="flex justify-between items-center mb-2">
-                <span className="text-gray-400 text-sm">2024년 10월</span>
-                <span className="text-[#FF2E2E] font-bold">+50,000원</span>
-              </div>
-              <p className="text-gray-500 text-xs">Jazz Night 수익</p>
-            </div>
-            <div className="bg-black rounded-xl p-4 border border-white/5">
-              <div className="flex justify-between items-center mb-2">
-                <span className="text-gray-400 text-sm">2024년 9월</span>
-                <span className="text-[#FF2E2E] font-bold">+30,000원</span>
-              </div>
-              <p className="text-gray-500 text-xs">Rock Concert 수익</p>
-            </div>
-            <p className="text-gray-600 text-xs text-center pt-2">모의 데이터입니다</p>
+            <p className="text-gray-400 text-sm">
+              정산 내역은 추후 업데이트 예정입니다. 준비되는 대로 다시 안내해 드릴게요.
+            </p>
+            <Button
+              type="button"
+              onClick={() => setShowSettlementDialog(false)}
+              className="w-full bg-[#FF3B5C] text-white hover:bg-[#cc2525] font-bold"
+            >
+              확인
+            </Button>
           </div>
         </DialogContent>
       </Dialog>

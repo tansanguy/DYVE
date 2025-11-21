@@ -50,7 +50,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setLoadingProposalCount(true);
     try {
       const proposals = await proposalsReceivedList();
-      setProposalCount(proposals.length);
+      setProposalCount(0);
     } catch (error) {
       if (isUnauthorized(error)) {
         setProposalCount(0);
