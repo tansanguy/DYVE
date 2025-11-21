@@ -1,7 +1,6 @@
 import { FormEvent, useMemo, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
-import { Input } from '../dyve-figma/components/ui/input';
 import { Textarea } from '../dyve-figma/components/ui/textarea';
 import { Label } from '../dyve-figma/components/ui/label';
 import { Button } from '../dyve-figma/components/ui/button';
@@ -14,16 +13,15 @@ export default function ProposalSend() {
   const navigate = useNavigate();
   const location = useLocation();
   const searchParams = useMemo(() => new URLSearchParams(location.search), [location.search]);
-  const initialArtistId = searchParams.get('artistId') ?? '';
-  const initialSpaceId = searchParams.get('spaceId') ?? '';
-  const defaultTarget: TargetType = initialArtistId ? 'artist' : initialSpaceId ? 'space' : 'artist';
+  const initialArtistId = searchParams.get('artistId');
+  const initialSpaceId = searchParams.get('spaceId');
+  const targetType: TargetType = initialArtistId ? 'artist' : initialSpaceId ? 'space' : 'artist';
+  const targetId = initialArtistId ? Number(initialArtistId) : initialSpaceId ? Number(initialSpaceId) : null;
 
-  const [target, setTarget] = useState<TargetType>(defaultTarget);
-  const [receiverId, setReceiverId] = useState(initialArtistId || initialSpaceId || '');
   const [content, setContent] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const isFormInvalid = !receiverId.trim() || !content.trim();
+  const isFormInvalid = !content.trim();
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -31,17 +29,16 @@ export default function ProposalSend() {
       alert('모든 항목을 입력해주세요.');
       return;
     }
-    const parsedId = Number(receiverId);
-    if (!Number.isInteger(parsedId) || parsedId <= 0) {
-      alert('유효한 ID를 입력해주세요.');
+    if (!targetId || !Number.isInteger(targetId) || targetId <= 0) {
+      alert('제안할 대상을 선택해 주세요.');
       return;
     }
 
     setIsSubmitting(true);
     try {
       await createProposal({
-        receiver_artist: target === 'artist' ? parsedId : null,
-        receiver_space: target === 'space' ? parsedId : null,
+        receiver_artist: targetType === 'artist' ? targetId : null,
+        receiver_space: targetType === 'space' ? targetId : null,
         content: content.trim(),
       });
       alert('제안이 전송되었습니다!');
@@ -68,31 +65,11 @@ export default function ProposalSend() {
 
       <div className="mx-auto max-w-screen-sm px-6 py-8">
         <form onSubmit={handleSubmit} className="space-y-5">
-          <div className="grid grid-cols-2 gap-2">
-            {(['artist', 'space'] as TargetType[]).map((option) => (
-              <button
-                type="button"
-                key={option}
-                onClick={() => setTarget(option)}
-                className={`rounded-2xl border px-4 py-3 text-sm font-semibold transition ${
-                  target === option
-                    ? 'border-[#FF3B5C] bg-[#FF3B5C]/10 text-white'
-                    : 'border-white/10 bg-[#111] text-white/60 hover:border-white/30'
-                }`}
-              >
-                {option === 'artist' ? '아티스트에게' : '공간에게'}
-              </button>
-            ))}
-          </div>
-
           <div>
-            <Label className="mb-2 block text-white">대상 ID</Label>
-            <Input
-              value={receiverId}
-              onChange={(event) => setReceiverId(event.target.value)}
-              placeholder="숫자로 된 ID를 입력하세요"
-              className="bg-[#111] text-white"
-            />
+            <p className="text-xs uppercase tracking-[0.4em] text-white/50">제안 대상</p>
+            <p className="text-lg font-semibold text-white">
+              {targetType === 'artist' ? '아티스트' : '공간'} #{targetId ?? '미지정'}
+            </p>
           </div>
 
           <div>

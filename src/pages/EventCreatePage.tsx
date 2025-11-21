@@ -1,4 +1,4 @@
-import { ChangeEvent, FormEvent, useMemo, useState } from 'react';
+import { ChangeEvent, FormEvent, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { Input } from '../dyve-figma/components/ui/input';
@@ -8,6 +8,7 @@ import { Button } from '../dyve-figma/components/ui/button';
 import { Checkbox } from '../dyve-figma/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../dyve-figma/components/ui/select';
 import { createEvent } from '../api/events';
+import { uploadImage } from '../api/uploads';
 import { BottomNav } from '../components/navigation/BottomNav';
 import { useAppContext } from '../contexts/AppContext';
 import type { CreateEventPayload } from '../types/Event';
@@ -34,9 +35,6 @@ type EventFormState = {
   entryType: string;
   imageUrl: string;
   allowDyve: boolean;
-  advertise: boolean;
-  space: string;
-  artists: string;
 };
 
 export default function EventCreatePage() {
@@ -56,10 +54,10 @@ export default function EventCreatePage() {
     entryType: '',
     imageUrl: '',
     allowDyve: true,
-    advertise: false,
-    space: '',
-    artists: '',
   });
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [selectedTimeMinutes, setSelectedTimeMinutes] = useState(20 * 60);
+  const [imageUploadStatus, setImageUploadStatus] = useState<'idle' | 'uploading' | 'success' | 'error'>('idle');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const genreOptions = useMemo(() => (genres.length ? genres : FALLBACK_GENRES), [genres]);
@@ -75,6 +73,22 @@ export default function EventCreatePage() {
     !formState.entryType ||
     isPriceMissing;
 
+  useEffect(() => {
+    setFormState((prev) => ({
+      ...prev,
+      date: selectedDate.toISOString().slice(0, 10),
+    }));
+  }, [selectedDate]);
+
+  useEffect(() => {
+    const hours = Math.floor(selectedTimeMinutes / 60);
+    const minutes = selectedTimeMinutes % 60;
+    setFormState((prev) => ({
+      ...prev,
+      time: `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`,
+    }));
+  }, [selectedTimeMinutes]);
+
   const handleChange = (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value, type, checked } = event.target as HTMLInputElement;
     if (type === 'checkbox') {
@@ -82,6 +96,42 @@ export default function EventCreatePage() {
       return;
     }
     setFormState((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const changeDateBy = (offsetDays: number) => {
+    setSelectedDate((prev) => {
+      const next = new Date(prev);
+      next.setDate(next.getDate() + offsetDays);
+      return next;
+    });
+  };
+
+  const adjustTimeBy = (deltaMinutes: number) => {
+    setSelectedTimeMinutes((prev) => {
+      const total = (prev + deltaMinutes + 24 * 60) % (24 * 60);
+      return total;
+    });
+  };
+
+  const handleImageChange = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) {
+      return;
+    }
+
+    setImageUploadStatus('uploading');
+    try {
+      const url = await uploadImage(file);
+      setFormState((prev) => ({ ...prev, imageUrl: url }));
+      setImageUploadStatus('success');
+    } catch (error) {
+      console.error('이미지 업로드 실패', error);
+      setImageUploadStatus('error');
+    } finally {
+      if (event.target) {
+        event.target.value = '';
+      }
+    }
   };
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -93,11 +143,6 @@ export default function EventCreatePage() {
 
     setIsSubmitting(true);
     try {
-      const artistIds = formState.artists
-        .split(',')
-        .map((item) => Number(item.trim()))
-        .filter((value) => !Number.isNaN(value));
-      const parsedSpace = Number(formState.space);
       const payload: CreateEventPayload = {
         title: formState.title.trim(),
         description: formState.description.trim() || undefined,
@@ -112,14 +157,7 @@ export default function EventCreatePage() {
         entry_type: formState.entryType,
         image_url: formState.imageUrl.trim() || undefined,
         allow_dyve_reservation: formState.allowDyve,
-        advertise: formState.advertise,
       };
-      if (!Number.isNaN(parsedSpace) && parsedSpace > 0) {
-        payload.space = parsedSpace;
-      }
-      if (artistIds.length) {
-        payload.artists = artistIds;
-      }
 
       await createEvent(payload);
       alert('공연 등록이 완료되었습니다.');
@@ -193,23 +231,52 @@ export default function EventCreatePage() {
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
-              <Label className="mb-2 block text-white" htmlFor="date">
+              <Label className="mb-2 block text-white">
                 날짜 <span className="text-[#FF3B5C]">*</span>
               </Label>
-              <Input
-                id="date"
-                name="date"
-                type="date"
-                value={formState.date}
-                onChange={handleChange}
-                className="bg-[#111] text-white"
-              />
+              <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-[#111] p-3 text-sm">
+                <button
+                  type="button"
+                  onClick={() => changeDateBy(-1)}
+                  className="rounded-full border border-white/10 px-3 py-1 text-white/70 hover:border-white/30"
+                >
+                  이전
+                </button>
+                <span className="text-white">{selectedDate.toLocaleDateString('ko-KR')}</span>
+                <button
+                  type="button"
+                  onClick={() => changeDateBy(1)}
+                  className="rounded-full border border-white/10 px-3 py-1 text-white/70 hover:border-white/30"
+                >
+                  다음
+                </button>
+              </div>
             </div>
             <div>
-              <Label className="mb-2 block text-white" htmlFor="time">
+              <Label className="mb-2 block text-white">
                 시간 <span className="text-[#FF3B5C]">*</span>
               </Label>
-              <Input id="time" name="time" type="time" value={formState.time} onChange={handleChange} className="bg-[#111] text-white" />
+              <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-[#111] p-3 text-sm">
+                <button
+                  type="button"
+                  onClick={() => adjustTimeBy(-30)}
+                  className="rounded-full border border-white/10 px-3 py-1 text-white/70 hover:border-white/30"
+                >
+                  -30
+                </button>
+                <span className="text-white">
+                  {`${Math.floor(selectedTimeMinutes / 60)
+                    .toString()
+                    .padStart(2, '0')}:${(selectedTimeMinutes % 60).toString().padStart(2, '0')}`}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => adjustTimeBy(30)}
+                  className="rounded-full border border-white/10 px-3 py-1 text-white/70 hover:border-white/30"
+                >
+                  +30
+                </button>
+              </div>
             </div>
           </div>
 
@@ -298,57 +365,35 @@ export default function EventCreatePage() {
           </div>
 
           <div>
-            <Label className="mb-2 block text-white" htmlFor="imageUrl">
-              공연 이미지 URL
+            <Label className="mb-2 block text-white">
+              공연 이미지 업로드
             </Label>
-            <Input
-              id="imageUrl"
-              name="imageUrl"
-              value={formState.imageUrl}
-              onChange={handleChange}
-              placeholder="https://"
-              className="bg-[#111] text-white"
+            <input
+              type="file"
+              accept="image/*"
+              onChange={handleImageChange}
+              className="w-full rounded-2xl border border-white/10 bg-[#111] px-4 py-3 text-sm text-white"
             />
-          </div>
-
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div>
-              <Label className="mb-2 block text-white" htmlFor="space">
-                연결된 공간 ID
-              </Label>
-              <Input
-                id="space"
-                name="space"
-                type="number"
-                value={formState.space}
-                onChange={handleChange}
-                placeholder="숫자로만 입력"
-                className="bg-[#111] text-white"
-              />
-            </div>
-            <div>
-              <Label className="mb-2 block text-white" htmlFor="artists">
-                참여 아티스트 IDs
-              </Label>
-              <Input
-                id="artists"
-                name="artists"
-                value={formState.artists}
-                onChange={handleChange}
-                placeholder="쉼표로 구분된 ID 나열"
-                className="bg-[#111] text-white"
-              />
-            </div>
+            {imageUploadStatus === 'uploading' && (
+              <p className="text-xs text-blue-300 mt-2">이미지를 업로드하는 중입니다...</p>
+            )}
+            {imageUploadStatus === 'error' && (
+              <p className="text-xs text-[#FF3B5C] mt-2">업로드에 실패했습니다. 다시 시도해 주세요.</p>
+            )}
+            {imageUploadStatus === 'success' && formState.imageUrl && (
+              <p className="text-xs text-[#7AF5C6] mt-2">이미지 업로드가 완료되었습니다.</p>
+            )}
           </div>
 
           <div className="space-y-3">
             <label className="flex items-center gap-3">
-              <Checkbox id="allowDyve" name="allowDyve" checked={formState.allowDyve} onCheckedChange={(value) => setFormState((prev) => ({ ...prev, allowDyve: Boolean(value) }))} />
+              <Checkbox
+                id="allowDyve"
+                name="allowDyve"
+                checked={formState.allowDyve}
+                onCheckedChange={(value) => setFormState((prev) => ({ ...prev, allowDyve: Boolean(value) }))}
+              />
               <span className="text-sm text-white">DYVE 예약 허용</span>
-            </label>
-            <label className="flex items-center gap-3">
-              <Checkbox id="advertise" name="advertise" checked={formState.advertise} onCheckedChange={(value) => setFormState((prev) => ({ ...prev, advertise: Boolean(value) }))} />
-              <span className="text-sm text-white">다이브 측 광고 노출</span>
             </label>
           </div>
 

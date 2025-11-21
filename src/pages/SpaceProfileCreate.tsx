@@ -52,7 +52,10 @@ export default function SpaceProfileCreate() {
     !formState.name.trim() ||
     !formState.category ||
     !formState.region ||
-    !formState.address.trim();
+    !formState.address.trim() ||
+    !formState.description.trim() ||
+    !formState.capacity.trim() ||
+    !formState.phone.trim();
   const isImageReady = Boolean(formState.image_url) && imageUploadStatus === 'success';
 
   const handleChange = (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -167,7 +170,9 @@ export default function SpaceProfileCreate() {
           </div>
 
           <div>
-            <Label className="mb-2 block text-white">활동 지역 <span className="text-[#FF3B5C]">*</span></Label>
+            <Label className="mb-2 block text-white">
+              활동 지역 <span className="text-[#FF3B5C]">*</span>
+            </Label>
             <Select value={formState.region} onValueChange={(value) => setFormState((prev) => ({ ...prev, region: value }))}>
               <SelectTrigger className="bg-[#111] text-white">
                 <SelectValue placeholder="지역 선택" />
@@ -183,7 +188,9 @@ export default function SpaceProfileCreate() {
           </div>
 
           <div>
-            <Label className="mb-2 block text-white">상세 주소 <span className="text-[#FF3B5C]">*</span></Label>
+            <Label className="mb-2 block text-white">
+              상세 주소 <span className="text-[#FF3B5C]">*</span>
+            </Label>
             <Input
               name="address"
               value={formState.address}
@@ -194,7 +201,9 @@ export default function SpaceProfileCreate() {
           </div>
 
           <div>
-            <Label className="mb-2 block text-white">설명</Label>
+            <Label className="mb-2 block text-white">
+              설명 <span className="text-[#FF3B5C]">*</span>
+            </Label>
             <Textarea
               rows={3}
               name="description"
@@ -206,7 +215,9 @@ export default function SpaceProfileCreate() {
           </div>
 
           <div>
-            <Label className="mb-2 block text-white">수용 인원</Label>
+            <Label className="mb-2 block text-white">
+              수용 인원 <span className="text-[#FF3B5C]">*</span>
+            </Label>
             <Input
               name="capacity"
               type="number"
@@ -242,7 +253,9 @@ export default function SpaceProfileCreate() {
           </div>
 
           <div>
-            <Label className="mb-2 block text-white">전화번호</Label>
+            <Label className="mb-2 block text-white">
+              전화번호 <span className="text-[#FF3B5C]">*</span>
+            </Label>
             <Input
               name="phone"
               value={formState.phone}
@@ -254,7 +267,7 @@ export default function SpaceProfileCreate() {
 
           <div>
             <Label className="mb-2 block text-white">
-              대표 이미지 업로드 <span className="text-xs text-gray-400">필수</span>
+              대표 이미지 업로드 <span className="text-[#FF3B5C]">*</span>
             </Label>
             <input
               type="file"

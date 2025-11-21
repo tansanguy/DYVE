@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import dyveLogo from '../assets/images/dyve-logo.png';
-import { getReceivedProposals, Proposal } from '../api/proposal';
 import { AroundYouResponse, EventPreview, getAroundYou, getUpcomingEvents } from '../api/home';
 import { BottomNav } from '../components/navigation/BottomNav';
 import { ProposalInboxButton } from '../components/navigation/ProposalInboxButton';
@@ -53,14 +52,6 @@ interface PerformanceInfo {
   description?: string;
 }
 
-interface ProposalSummary {
-  id: number;
-  senderLabel: string;
-  content: string;
-  status: Proposal['status'];
-  sentAt: string;
-}
-
 export default function Home() {
   const navigate = useNavigate();
 
@@ -69,21 +60,7 @@ export default function Home() {
   const [currentRegion, setCurrentRegion] = useState(DEFAULT_LOCATION.region);
   const [aroundStatus, setAroundStatus] = useState<'loading' | 'error' | 'idle'>('loading');
   const [upcomingStatus, setUpcomingStatus] = useState<'loading' | 'error' | 'idle'>('loading');
-  const [receivedProposals, setReceivedProposals] = useState<ProposalSummary[]>([]);
-  const [proposalStatus, setProposalStatus] = useState<'loading' | 'error' | 'idle'>('loading');
-
   useEffect(() => {
-    const fetchProposals = async () => {
-      try {
-        const data = await getReceivedProposals();
-        setReceivedProposals(data.map(mapProposalToSummary));
-        setProposalStatus('idle');
-      } catch (error) {
-        console.error('받은 제안함을 불러오는 중 오류 발생', error);
-        setProposalStatus('error');
-      }
-    };
-
     const fetchAround = async () => {
       try {
         const data: AroundYouResponse = await getAroundYou(DEFAULT_LOCATION);
@@ -109,7 +86,6 @@ export default function Home() {
       }
     };
 
-    fetchProposals();
     fetchAround();
     fetchUpcoming();
   }, []);
@@ -156,37 +132,6 @@ export default function Home() {
               <p className="text-sm text-white/60">현재 {currentRegion} 인근에서 진행되는 공연을 엄선했어요.</p>
             </div>
             <HeroSection hero={heroHighlight} />
-          </section>
-
-          <section className="space-y-3">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs uppercase tracking-[0.32em] text-white/50">Proposal</p>
-                <h2 className="text-2xl font-semibold">받은 제안함</h2>
-              </div>
-              <span className="text-xs text-white/40">제안 0건</span>
-            </div>
-            {proposalStatus === 'loading' && (
-              <div className="h-[140px] rounded-3xl border border-white/10 bg-white/5 p-5 animate-pulse" />
-            )}
-            {proposalStatus === 'error' && <StatusBlock message="제안함을 불러오는 중 실패했습니다." />}
-            {proposalStatus === 'idle' && receivedProposals.length === 0 && (
-              <StatusBlock message="새로운 제안이 없습니다." />
-            )}
-            {proposalStatus === 'idle' && receivedProposals.length > 0 && (
-              <div className="space-y-3">
-                {receivedProposals.slice(0, 3).map((proposal) => (
-                  <ProposalSummaryCard key={`proposal-${proposal.id}`} proposal={proposal} />
-                ))}
-                <button
-                  type="button"
-                  onClick={() => navigate('/inbox')}
-                  className="text-xs uppercase tracking-[0.32em] text-white/60 underline-offset-2 hover:text-white"
-                >
-                  전체 제안함 보기
-                </button>
-              </div>
-            )}
           </section>
 
           <section className="space-y-4">
@@ -279,42 +224,6 @@ function mapEventToPerformance(event: EventPreview): PerformanceInfo {
     imageUrl: event.image_url ?? FALLBACK_IMAGE,
     description: event.description,
   };
-}
-
-function mapProposalToSummary(proposal: Proposal): ProposalSummary {
-  const senderLabel = proposal.sender ? `보낸 사람 #${proposal.sender}` : '보낸 사람 정보 없음';
-  return {
-    id: proposal.id,
-    senderLabel,
-    content: proposal.content,
-    status: proposal.status,
-    sentAt: proposal.sent_at,
-  };
-}
-
-interface ProposalSummaryCardProps {
-  proposal: ProposalSummary;
-}
-
-function ProposalSummaryCard({ proposal }: ProposalSummaryCardProps) {
-  const previewContent =
-    proposal.content.length > 90 ? `${proposal.content.slice(0, 90)}…` : proposal.content;
-  const sentAtLabel = proposal.sentAt
-    ? new Date(proposal.sentAt).toLocaleDateString('ko-KR', { month: 'numeric', day: 'numeric' })
-    : '날짜 미정';
-
-  return (
-    <div className="space-y-2 rounded-3xl border border-white/10 bg-white/5 p-4">
-      <div className="flex items-center justify-between">
-        <p className="text-sm font-semibold text-white">{proposal.senderLabel}</p>
-        <span className="rounded-full border border-white/10 px-3 py-1 text-[11px] uppercase tracking-[0.3em] text-white/70">
-          {proposal.status}
-        </span>
-      </div>
-      <p className="text-sm text-white/80 line-clamp-2">{previewContent}</p>
-      <p className="text-[11px] text-white/50">{sentAtLabel}</p>
-    </div>
-  );
 }
 
 interface HeroSectionProps {

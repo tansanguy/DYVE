@@ -311,7 +311,11 @@ export default function BookingPage() {
           </div>
           <button
             type="button"
-            disabled={submitting}
+            disabled={
+              submitting ||
+              status !== 'idle' ||
+              normalizedEntryType !== 'entry' && selectedSeats.length === 0
+            }
             onClick={handleReservation}
             className="w-full rounded-2xl bg-[#FF3B5C] py-4 text-lg font-bold text-white transition hover:bg-[#d43550] disabled:cursor-not-allowed disabled:bg-[#FF3B5C]/60"
           >

@@ -2,7 +2,11 @@
 import axios from 'axios';
 
 const DEFAULT_BASE_URL = 'https://dyve-backend-ui3c.onrender.com';
-const resolvedBaseURL = process.env.REACT_APP_API_BASE_URL?.trim() || DEFAULT_BASE_URL;
+const envBaseUrl =
+  process.env.NEXT_PUBLIC_API_URL?.trim() ||
+  process.env.REACT_APP_API_BASE_URL?.trim() ||
+  process.env.NEXT_PUBLIC_API_BASE_URL?.trim();
+const resolvedBaseURL = envBaseUrl || DEFAULT_BASE_URL;
 
 // Render 백엔드로 세션 쿠키를 항상 전달하기 위해 전역으로 활성화한다.
 axios.defaults.withCredentials = true;

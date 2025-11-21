@@ -56,6 +56,7 @@ export default function ArtistProfileCreate() {
     !formData.category ||
     !formData.genres ||
     !formData.region ||
+    !formData.bio.trim() ||
     !formData.phone.trim();
   const isImageReady = Boolean(formData.image_url) && imageUploadStatus === 'success';
 
@@ -148,7 +149,9 @@ export default function ArtistProfileCreate() {
           </div>
 
           <div>
-            <Label className="mb-2 block text-white">카테고리</Label>
+            <Label className="mb-2 block text-white">
+              카테고리 <span className="text-[#FF3B5C]">*</span>
+            </Label>
             <Select value={formData.category} onValueChange={(value) => setFormData((prev) => ({ ...prev, category: value }))}>
               <SelectTrigger className="bg-[#111] text-white" aria-label="카테고리 선택">
                 <SelectValue placeholder="카테고리를 선택하세요" />
@@ -164,7 +167,9 @@ export default function ArtistProfileCreate() {
           </div>
 
           <div>
-            <Label className="mb-2 block text-white">장르</Label>
+            <Label className="mb-2 block text-white">
+              장르 <span className="text-[#FF3B5C]">*</span>
+            </Label>
             <Select value={formData.genres} onValueChange={(value) => setFormData((prev) => ({ ...prev, genres: value }))}>
               <SelectTrigger className="bg-[#111] text-white" aria-label="장르 선택">
                 <SelectValue placeholder="장르를 선택하세요" />
@@ -180,7 +185,9 @@ export default function ArtistProfileCreate() {
           </div>
 
           <div>
-            <Label className="mb-2 block text-white">활동 지역</Label>
+            <Label className="mb-2 block text-white">
+              활동 지역 <span className="text-[#FF3B5C]">*</span>
+            </Label>
             <Select value={formData.region} onValueChange={(value) => setFormData((prev) => ({ ...prev, region: value }))}>
               <SelectTrigger className="bg-[#111] text-white" aria-label="지역 선택">
                 <SelectValue placeholder="활동 지역을 선택하세요" />
@@ -196,7 +203,9 @@ export default function ArtistProfileCreate() {
           </div>
 
           <div>
-            <Label className="mb-2 block text-white">소개</Label>
+            <Label className="mb-2 block text-white">
+              소개 <span className="text-[#FF3B5C]">*</span>
+            </Label>
             <Textarea
               name="bio"
               value={formData.bio}
@@ -275,7 +284,9 @@ export default function ArtistProfileCreate() {
           </div>
 
           <div>
-            <Label className="mb-2 block text-white">휴대폰 번호</Label>
+            <Label className="mb-2 block text-white">
+              휴대폰 번호 <span className="text-[#FF3B5C]">*</span>
+            </Label>
             <Input
               name="phone"
               value={formData.phone}
