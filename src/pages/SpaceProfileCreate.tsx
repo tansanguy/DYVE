@@ -56,8 +56,6 @@ export default function SpaceProfileCreate() {
     !formState.description.trim() ||
     !formState.capacity.trim() ||
     !formState.phone.trim();
-  const isImageReady = Boolean(formState.image_url) && imageUploadStatus === 'success';
-
   const handleChange = (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = event.target;
     setFormState((prev) => ({ ...prev, [name]: value }));
@@ -267,28 +265,32 @@ export default function SpaceProfileCreate() {
 
           <div>
             <Label className="mb-2 block text-white">
-              대표 이미지 업로드 <span className="text-[#FF3B5C]">*</span>
+              대표 이미지 업로드 <span className="text-xs text-white/60">(선택)</span>
             </Label>
-            <input
-              type="file"
-              accept="image/*"
-              onChange={handleImageChange}
-              className="w-full rounded-2xl border border-white/10 bg-[#111] px-4 py-3 text-sm text-gray-200"
-            />
-            {imageUploadStatus === 'uploading' && (
-              <p className="text-xs text-blue-300 mt-1">이미지를 업로드하는 중입니다...</p>
-            )}
+            <label className="relative flex cursor-pointer items-center justify-between rounded-2xl border border-white/10 bg-gradient-to-r from-[#FF2E2E] to-[#DB1A43] px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-[#FF2E2E]/40 transition hover:brightness-110">
+              <span>{formState.image_url ? '등록된 이미지 확인' : '이미지 업로드하기'}</span>
+              <span className="text-xs text-white/80">
+                {imageUploadStatus === 'uploading'
+                  ? '업로드 중'
+                  : imageUploadStatus === 'success'
+                    ? '완료'
+                    : '파일 선택'}
+              </span>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleImageChange}
+                className="absolute inset-0 opacity-0"
+              />
+            </label>
             {imageUploadStatus === 'error' && (
               <p className="text-xs text-[#FF2E2E] mt-1">이미지 업로드에 실패했습니다. 다시 시도해 주세요.</p>
-            )}
-            {imageUploadStatus === 'success' && (
-              <p className="text-xs text-[#7AF5C6] mt-1">이미지 업로드가 완료되었습니다.</p>
             )}
           </div>
 
           <Button
             type="submit"
-            disabled={isSubmitting || isFormInvalid || !isImageReady}
+            disabled={isSubmitting || isFormInvalid}
             className="w-full bg-[#FF3B5C] py-4 font-bold"
           >
             {isSubmitting ? '저장 중...' : '공간 등록하기'}

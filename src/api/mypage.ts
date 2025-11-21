@@ -30,10 +30,19 @@ export interface NotificationSettings {
 
 export interface ReservationHistory {
   id: number;
-  event_title: string;
-  event_date: string;
-  status: string;
+  user: number;
+  event: number;
+  quantity: number;
+  seat: string;
+  entry_type: string;
+  price: number;
+  qr_code: string;
+  reservation_code: string;
   created_at: string;
+  updated_at: string;
+  event_title?: string;
+  event_date?: string;
+  status?: string;
 }
 
 export interface SettlementHistory {

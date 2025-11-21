@@ -98,18 +98,51 @@ export default function EventCreatePage() {
     setFormState((prev) => ({ ...prev, [name]: value }));
   };
 
-  const changeDateBy = (offsetDays: number) => {
+  const currentYear = new Date().getFullYear();
+  const yearOptions = Array.from({ length: 5 }, (_, idx) => currentYear + idx);
+
+  const getDaysInMonth = (year: number, month: number) =>
+    new Date(year, month, 0).getDate();
+
+  const handleYearChange = (year: number) => {
     setSelectedDate((prev) => {
       const next = new Date(prev);
-      next.setDate(next.getDate() + offsetDays);
+      const day = Math.min(next.getDate(), getDaysInMonth(year, next.getMonth() + 1));
+      next.setFullYear(year);
+      next.setDate(day);
       return next;
     });
   };
 
-  const adjustTimeBy = (deltaMinutes: number) => {
+  const handleMonthChange = (month: number) => {
+    setSelectedDate((prev) => {
+      const next = new Date(prev);
+      const day = Math.min(next.getDate(), getDaysInMonth(next.getFullYear(), month));
+      next.setMonth(month - 1);
+      next.setDate(day);
+      return next;
+    });
+  };
+
+  const handleDayChange = (day: number) => {
+    setSelectedDate((prev) => {
+      const next = new Date(prev);
+      next.setDate(day);
+      return next;
+    });
+  };
+
+  const handleHourChange = (hour: number) => {
     setSelectedTimeMinutes((prev) => {
-      const total = (prev + deltaMinutes + 24 * 60) % (24 * 60);
-      return total;
+      const minute = prev % 60;
+      return hour * 60 + minute;
+    });
+  };
+
+  const handleMinuteChange = (minute: number) => {
+    setSelectedTimeMinutes((prev) => {
+      const hour = Math.floor(prev / 60);
+      return hour * 60 + minute;
     });
   };
 
@@ -229,54 +262,74 @@ export default function EventCreatePage() {
             />
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div>
-              <Label className="mb-2 block text-white">
-                날짜 <span className="text-[#FF3B5C]">*</span>
-              </Label>
-              <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-[#111] p-3 text-sm">
-                <button
-                  type="button"
-                  onClick={() => changeDateBy(-1)}
-                  className="rounded-full border border-white/10 px-3 py-1 text-white/70 hover:border-white/30"
-                >
-                  이전
-                </button>
-                <span className="text-white">{selectedDate.toLocaleDateString('ko-KR')}</span>
-                <button
-                  type="button"
-                  onClick={() => changeDateBy(1)}
-                  className="rounded-full border border-white/10 px-3 py-1 text-white/70 hover:border-white/30"
-                >
-                  다음
-                </button>
-              </div>
+          <div className="space-y-4">
+            <Label className="mb-2 block text-white">
+              날짜 <span className="text-[#FF3B5C]">*</span>
+            </Label>
+            <div className="grid gap-3 sm:grid-cols-3">
+              <select
+                className="rounded-2xl border border-white/10 bg-[#111] px-4 py-3 text-sm text-white"
+                value={selectedDate.getFullYear()}
+                onChange={(event) => handleYearChange(Number(event.target.value))}
+              >
+                {yearOptions.map((year) => (
+                  <option key={`year-${year}`} value={year}>
+                    {year}년
+                  </option>
+                ))}
+              </select>
+              <select
+                className="rounded-2xl border border-white/10 bg-[#111] px-4 py-3 text-sm text-white"
+                value={selectedDate.getMonth() + 1}
+                onChange={(event) => handleMonthChange(Number(event.target.value))}
+              >
+                {Array.from({ length: 12 }, (_, index) => index + 1).map((month) => (
+                  <option key={`month-${month}`} value={month}>
+                    {month}월
+                  </option>
+                ))}
+              </select>
+              <select
+                className="rounded-2xl border border-white/10 bg-[#111] px-4 py-3 text-sm text-white"
+                value={selectedDate.getDate()}
+                onChange={(event) => handleDayChange(Number(event.target.value))}
+              >
+                {Array.from(
+                  { length: getDaysInMonth(selectedDate.getFullYear(), selectedDate.getMonth() + 1) },
+                  (_, index) => index + 1,
+                ).map((day) => (
+                  <option key={`day-${day}`} value={day}>
+                    {day}일
+                  </option>
+                ))}
+              </select>
             </div>
-            <div>
-              <Label className="mb-2 block text-white">
-                시간 <span className="text-[#FF3B5C]">*</span>
-              </Label>
-              <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-[#111] p-3 text-sm">
-                <button
-                  type="button"
-                  onClick={() => adjustTimeBy(-30)}
-                  className="rounded-full border border-white/10 px-3 py-1 text-white/70 hover:border-white/30"
-                >
-                  -30
-                </button>
-                <span className="text-white">
-                  {`${Math.floor(selectedTimeMinutes / 60)
-                    .toString()
-                    .padStart(2, '0')}:${(selectedTimeMinutes % 60).toString().padStart(2, '0')}`}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => adjustTimeBy(30)}
-                  className="rounded-full border border-white/10 px-3 py-1 text-white/70 hover:border-white/30"
-                >
-                  +30
-                </button>
-              </div>
+            <Label className="mb-2 block text-white">
+              시간 <span className="text-[#FF3B5C]">*</span>
+            </Label>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <select
+                className="rounded-2xl border border-white/10 bg-[#111] px-4 py-3 text-sm text-white"
+                value={Math.floor(selectedTimeMinutes / 60)}
+                onChange={(event) => handleHourChange(Number(event.target.value))}
+              >
+                {Array.from({ length: 25 }, (_, index) => index).map((hour) => (
+                  <option key={`hour-${hour}`} value={hour}>
+                    {hour.toString().padStart(2, '0')}시
+                  </option>
+                ))}
+              </select>
+              <select
+                className="rounded-2xl border border-white/10 bg-[#111] px-4 py-3 text-sm text-white"
+                value={selectedTimeMinutes % 60}
+                onChange={(event) => handleMinuteChange(Number(event.target.value))}
+              >
+                {Array.from({ length: 61 }, (_, index) => index).map((minute) => (
+                  <option key={`minute-${minute}`} value={minute}>
+                    {minute.toString().padStart(2, '0')}분
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
 

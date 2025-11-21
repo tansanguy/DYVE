@@ -67,12 +67,6 @@ export default function ProposalPage({ navigate, target }: ProposalPageProps) {
       </div>
 
       <div className="px-6 py-8">
-        {/* Target Info */}
-        <div className="bg-[#1A1A1A] rounded-2xl p-6 border border-white/5 mb-6">
-          <p className="text-gray-600 text-sm mb-2">제안 대상</p>
-          <h3 className="text-white text-xl font-bold">{target?.name || '선택된 대상'}</h3>
-        </div>
-
         {/* Proposal Form */}
         <div className="mb-6">
           <label className="text-white mb-3 block font-bold">

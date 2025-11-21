@@ -12,6 +12,8 @@ import { ProposalInboxButton } from '../components/navigation/ProposalInboxButto
 import { useAuth } from '../contexts/AuthContext';
 import apiClient from '../api/client';
 import { FakeLoginResponse } from '../types/auth';
+import { getMyReservations, type ReservationHistory } from '../api/mypage';
+import { formatTimestamp } from '../utils/event';
 
 type UserType = 'user' | 'artist' | 'venue' | null;
 
@@ -30,15 +32,13 @@ export default function MyPage() {
     phone: '010-1234-5678',
   });
 
-  const mockBookings = [
-    { id: 1, eventId: 101, title: 'Midnight Jazz Session', date: '2025-11-05', status: '예매완료' },
-    { id: 2, eventId: 102, title: 'Indie Rock Night', date: '2025-11-04', status: '예매완료' },
-  ];
-
   const mockPerformances = [
     { id: 1, title: 'Jazz Night Live', date: '2025-12-01', venue: 'Blue Note', attendees: 45 },
     { id: 2, title: 'Acoustic Session', date: '2025-11-28', venue: 'Café Muse', attendees: 30 },
   ];
+  const [reservations, setReservations] = useState<ReservationHistory[]>([]);
+  const [loadingReservations, setLoadingReservations] = useState(false);
+  const [reservationError, setReservationError] = useState<string | null>(null);
 
   useEffect(() => {
     if (isAuthenticated && user) {
@@ -49,6 +49,41 @@ export default function MyPage() {
       }));
     }
   }, [isAuthenticated, user]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    if (!isAuthenticated) {
+      setReservations([]);
+      setLoadingReservations(false);
+      setReservationError(null);
+      return () => {
+        isMounted = false;
+      };
+    }
+
+    setLoadingReservations(true);
+    setReservationError(null);
+
+    getMyReservations()
+      .then((data) => {
+        if (!isMounted) return;
+        setReservations(data);
+      })
+      .catch((error) => {
+        console.error('예매 내역 로딩 실패', error);
+        if (!isMounted) return;
+        setReservationError('예매 내역을 불러오지 못했습니다.');
+      })
+      .finally(() => {
+        if (!isMounted) return;
+        setLoadingReservations(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [isAuthenticated]);
 
   const handleKakaoLogin = () => {
     alert('카카오 로그인은 준비 중입니다.');
@@ -91,7 +126,10 @@ export default function MyPage() {
 
   const goToArtistRegister = () => navigate('/artist/create');
   const goToSpaceRegister = () => navigate('/spaces/create');
-  const handleBookingClick = (eventId: number) => navigate(`/events/${eventId}`);
+  const handleBookingClick = (eventId?: number) => {
+    if (eventId == null) return;
+    navigate(`/events/${eventId}`);
+  };
 
   return (
     <div className="min-h-screen pb-20 bg-black">
@@ -171,22 +209,43 @@ export default function MyPage() {
               <Ticket size={20} className="text-[#FF2E2E]" />
               <h4 className="text-white font-bold">예매 내역</h4>
             </div>
-            <div className="space-y-3">
-              {mockBookings.map((booking) => (
-                <button
-                  key={booking.id}
-                  type="button"
-                  onClick={() => handleBookingClick(booking.eventId)}
-                  className="w-full rounded-xl border border-white/5 bg-black p-4 text-left transition hover:border-[#FF2E2E]"
-                >
-                  <h5 className="text-white mb-1 font-medium">{booking.title}</h5>
-                  <div className="flex justify-between items-center">
-                    <p className="text-gray-500 text-sm">{booking.date}</p>
-                    <span className="text-[#FF2E2E] text-sm font-semibold">{booking.status}</span>
-                  </div>
-                </button>
-              ))}
-            </div>
+            {loadingReservations ? (
+              <div className="animate-pulse rounded-xl border border-white/5 bg-black/30 p-4 text-sm text-white/60">예매 내역을 불러오는 중입니다...</div>
+            ) : reservationError ? (
+              <div className="rounded-xl border border-white/5 bg-black/20 p-4 text-center text-sm text-white/60">{reservationError}</div>
+            ) : reservations.length === 0 ? (
+              <div className="rounded-xl border border-white/5 bg-black/20 p-4 text-center text-sm text-white/60">예매 내역이 없습니다.</div>
+            ) : (
+              <div className="space-y-3">
+                {reservations.map((reservation) => {
+                  const title = reservation.event_title || `예매 #${reservation.id}`;
+                  const schedule = reservation.event_date || reservation.created_at;
+                  const statusLabel = reservation.status || reservation.entry_type || '예매 완료';
+                  const detailParts = [
+                    reservation.quantity ? `${reservation.quantity}매` : null,
+                    reservation.seat ? `좌석 ${reservation.seat}` : null,
+                  ].filter(Boolean);
+
+                  return (
+                    <button
+                      key={reservation.id}
+                      type="button"
+                      onClick={() => handleBookingClick(reservation.event)}
+                      className="w-full rounded-xl border border-white/5 bg-black p-4 text-left transition hover:border-[#FF2E2E]"
+                    >
+                      <h5 className="text-white mb-1 font-medium">{title}</h5>
+                      <div className="flex justify-between items-center">
+                        <p className="text-gray-500 text-sm">{formatTimestamp(schedule)}</p>
+                        <span className="text-[#FF2E2E] text-sm font-semibold">{statusLabel}</span>
+                      </div>
+                      {detailParts.length > 0 && (
+                        <p className="text-gray-400 text-xs mt-1">{detailParts.join(' · ')}</p>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </div>
         )}
 

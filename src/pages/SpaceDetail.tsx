@@ -65,7 +65,7 @@ export default function SpaceDetailPage() {
       </div>
 
       <div className="flex flex-1 flex-col overflow-hidden">
-        <div className="flex-1 overflow-y-auto px-4 py-5">
+        <div className="flex-1 overflow-y-auto px-4 pb-5 pt-5">
           <div className="mx-auto flex max-w-md flex-col gap-5">
             {status === 'loading' && <p className="text-sm text-gray-400">불러오는 중...</p>}
             {status === 'error' && <p className="text-sm text-red-400">공간 정보를 불러오지 못했습니다.</p>}

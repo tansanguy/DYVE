@@ -66,13 +66,6 @@ export default function ProposalSend() {
       <div className="mx-auto max-w-screen-sm px-6 py-8">
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>
-            <p className="text-xs uppercase tracking-[0.4em] text-white/50">제안 대상</p>
-            <p className="text-lg font-semibold text-white">
-              {targetType === 'artist' ? '아티스트' : '공간'} #{targetId ?? '미지정'}
-            </p>
-          </div>
-
-          <div>
             <Label className="mb-2 block text-white">제안 내용</Label>
             <Textarea
               rows={6}
