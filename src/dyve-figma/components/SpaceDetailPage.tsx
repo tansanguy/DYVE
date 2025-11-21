@@ -75,7 +75,9 @@ export default function SpaceDetailPage({ navigate, space }: SpaceDetailPageProp
   }
 
   const detail = spaceDetail!;
-  const equipmentItems = (detail.equipments ?? '')
+  const equipmentSource =
+    Array.isArray(detail.equipments) ? detail.equipments.join('\n') : detail.equipments ?? '';
+  const equipmentItems = equipmentSource
     .split(/\r?\n|,/)
     .map((item) => item.trim())
     .filter(Boolean);
